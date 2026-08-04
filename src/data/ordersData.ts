@@ -16,6 +16,10 @@ export type Order = {
   status: OrderStatus;
   createdAt: number;
   waiter: string;
+  paymentId?: string;
+  paymentOrderId?: string;
+  paymentSignature?: string;
+  paymentStatus?: "pending" | "paid" | "failed";
 };
 
 export const seedOrders: Order[] = [

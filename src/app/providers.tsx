@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useStore } from "@/lib/store";
+import Script from "next/script";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -21,6 +22,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const logout = useStore((s) => s.logout);
   const setMenu = useStore((s) => s.setMenu);
   const setCategories = useStore((s) => s.setCategories);
+  const setOrders = useStore((s) => s.setOrders);
+  const setTables = useStore((s) => s.setTables);
 
   useEffect(() => {
     const verifySession = async () => {
@@ -42,11 +45,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }
     };
 
-    const fetchMenuAndCategories = async () => {
+    const fetchInitialData = async () => {
       try {
-        const [menuRes, catsRes] = await Promise.all([
+        const [menuRes, catsRes, ordersRes, tablesRes] = await Promise.all([
           fetch("/api/menu"),
           fetch("/api/categories"),
+          fetch("/api/orders"),
+          fetch("/api/tables"),
         ]);
         if (menuRes.ok) {
           const menuData = await menuRes.json();
@@ -56,18 +61,34 @@ export function Providers({ children }: { children: React.ReactNode }) {
           const catsData = await catsRes.json();
           setCategories(catsData);
         }
+        if (ordersRes.ok) {
+          const ordersData = await ordersRes.json();
+          setOrders(ordersData);
+        }
+        if (tablesRes.ok) {
+          const tablesData = await tablesRes.json();
+          setTables(tablesData);
+        }
       } catch (e) {
-        console.error("Failed to load initial menu or categories:", e);
+        console.error("Failed to load initial data from database:", e);
       }
     };
 
+    let intervalId: NodeJS.Timeout;
+
     const init = async () => {
-      await Promise.all([verifySession(), fetchMenuAndCategories()]);
+      await Promise.all([verifySession(), fetchInitialData()]);
       setMounted(true);
+      // Start polling every 5 seconds to sync data (orders, menu, categories) across client terminals
+      intervalId = setInterval(fetchInitialData, 5000);
     };
 
     init();
-  }, [login, logout, setMenu, setCategories]);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [login, logout, setMenu, setCategories, setOrders, setTables]);
 
   if (!mounted) {
     return null;
@@ -76,6 +97,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
     </QueryClientProvider>
   );
 }

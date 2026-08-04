@@ -92,8 +92,8 @@ export default function AdminOrders() {
               </div>
 
               <div className="mt-3 space-y-1 text-xs">
-                {o.items.slice(0, 3).map((it) => (
-                  <div key={it.id} className="flex justify-between">
+                {o.items.slice(0, 3).map((it, idx) => (
+                  <div key={it.id || `${it.name}-${idx}`} className="flex justify-between">
                     <span className="truncate">{it.emoji} {it.name} ×{it.quantity}</span>
                     <span className="text-muted-foreground">₹{it.price * it.quantity}</span>
                   </div>

@@ -8,7 +8,7 @@ export async function GET() {
     await connectToDatabase();
     
     const dbCats = await Category.find().sort({ createdAt: 1 });
-    const catNames = dbCats.map((c) => c.name);
+    const catNames = dbCats.map((c: any) => c.name);
     return NextResponse.json(catNames);
   } catch (error: any) {
     console.error("Fetch categories API error:", error);

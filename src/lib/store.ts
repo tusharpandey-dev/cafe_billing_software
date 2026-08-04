@@ -7,6 +7,8 @@ import type { Role } from "@/data/usersData";
 
 export const GST_RATE = 0.05;
 
+export type Table = { id: string; number: number; capacity: number };
+
 type Auth = { role: Role; name: string; email: string } | null;
 
 type State = {
@@ -14,16 +16,20 @@ type State = {
   orders: Order[];
   menu: MenuItem[];
   categories: string[];
+  tables: Table[];
   login: (auth: Auth) => void;
   logout: () => void;
-  addOrder: (o: Omit<Order, "id" | "createdAt" | "status">) => Order;
-  updateStatus: (id: string, status: OrderStatus) => void;
+  addOrder: (o: Omit<Order, "id" | "createdAt" | "status">) => Promise<Order>;
+  updateStatus: (id: string, status: OrderStatus) => Promise<void>;
   addMenuItem: (m: Omit<MenuItem, "id">) => Promise<void>;
   updateMenuItem: (id: string, patch: Partial<MenuItem>) => Promise<void>;
   deleteMenuItem: (id: string) => Promise<void>;
   addCategory: (name: string) => Promise<void>;
   setMenu: (menu: MenuItem[]) => void;
   setCategories: (categories: string[]) => void;
+  setOrders: (orders: Order[]) => void;
+  setTables: (tables: Table[]) => void;
+  addTable: (t: Omit<Table, "id">) => Promise<Table>;
 };
 
 export const useStore = create<State>()(
@@ -33,16 +39,68 @@ export const useStore = create<State>()(
       orders: [],
       menu: [],
       categories: [],
+      tables: [],
       login: (auth) => set({ auth }),
       logout: () => set({ auth: null }),
-      addOrder: (o) => {
+      setOrders: (orders) => set({ orders }),
+      setTables: (tables) => set({ tables }),
+      addTable: async (t) => {
+        try {
+          const res = await fetch("/api/tables", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(t),
+          });
+          if (res.ok) {
+            const table = await res.json();
+            const updatedTables = [...get().tables, table].sort((a, b) => a.number - b.number);
+            set({ tables: updatedTables });
+            return table;
+          }
+        } catch (e) {
+          console.error("Store error adding table:", e);
+        }
+        const fallbackId = `TBL-${100 + get().tables.length}`;
+        const table: Table = { ...t, id: fallbackId };
+        const updatedTables = [...get().tables, table].sort((a, b) => a.number - b.number);
+        set({ tables: updatedTables });
+        return table;
+      },
+      addOrder: async (o) => {
+        try {
+          const res = await fetch("/api/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(o),
+          });
+          if (res.ok) {
+            const order = await res.json();
+            set({ orders: [order, ...get().orders] });
+            return order;
+          }
+        } catch (e) {
+          console.error("Store error adding order:", e);
+        }
+        // Fallback in case of API failure
         const id = `ORD-${1043 + get().orders.filter((x) => x.id.startsWith("ORD-")).length}`;
         const order: Order = { ...o, id, createdAt: Date.now(), status: "pending" };
         set({ orders: [order, ...get().orders] });
         return order;
       },
-      updateStatus: (id, status) =>
-        set({ orders: get().orders.map((o) => (o.id === id ? { ...o, status } : o)) }),
+      updateStatus: async (id, status) => {
+        try {
+          const res = await fetch(`/api/orders/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          });
+          if (res.ok) {
+            set({ orders: get().orders.map((o) => (o.id === id ? { ...o, status } : o)) });
+          }
+        } catch (e) {
+          console.error("Store error updating order status:", e);
+        }
+      },
       setMenu: (menu) => set({ menu }),
       setCategories: (categories) => set({ categories }),
       addMenuItem: async (m) => {

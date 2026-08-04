@@ -37,7 +37,7 @@ const MenuItemSchema = new Schema(
 
 // Add virtual 'id' mapping to '_id' for frontend compatibility if needed,
 // but since we can just do mapping in serialization or use virtuals:
-MenuItemSchema.virtual("id").get(function () {
+MenuItemSchema.virtual("id").get(function (this: any) {
   return this._id.toHexString();
 });
 

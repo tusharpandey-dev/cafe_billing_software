@@ -4,13 +4,12 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, Trash2, Send, Search, Leaf, Drumstick, CheckCircle2 } from "lucide-react";
 import type { MenuItem } from "@/data/menuData";
-import { tables } from "@/data/tablesData";
 import { calcTotals, useStore } from "@/lib/store";
 import type { OrderItem } from "@/data/ordersData";
 import { ReceiptCard } from "@/components/ReceiptCard";
 
 export default function WaiterPOS() {
-  const { addOrder, auth, menu: menuItems, categories } = useStore();
+  const { addOrder, auth, menu: menuItems, categories, tables, addTable } = useStore();
   const [activeCat, setActiveCat] = useState<string>(categories[0] ?? "");
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -18,6 +17,33 @@ export default function WaiterPOS() {
   const [customerName, setCustomerName] = useState("");
   const [notes, setNotes] = useState("");
   const [placed, setPlaced] = useState<null | ReturnType<typeof useStore.getState>["orders"][number]>(null);
+
+  const [showAddTable, setShowAddTable] = useState(false);
+  const [newTableNumber, setNewTableNumber] = useState("");
+  const [newTableCapacity, setNewTableCapacity] = useState("4");
+
+  const handleAddTable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const num = parseInt(newTableNumber);
+    const cap = parseInt(newTableCapacity);
+    if (!num || num <= 0 || !cap || cap <= 0) {
+      alert("Please enter valid positive numbers.");
+      return;
+    }
+    if (tables.some((t) => t.number === num)) {
+      alert(`Table #${num} already exists.`);
+      return;
+    }
+    try {
+      const newT = await addTable({ number: num, capacity: cap });
+      setTableNumber(newT.number);
+      setShowAddTable(false);
+      setNewTableNumber("");
+      setNewTableCapacity("4");
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const filtered = useMemo(
     () =>
@@ -43,20 +69,67 @@ export default function WaiterPOS() {
 
   const totals = calcTotals(items);
 
-  const place = () => {
+  const place = async () => {
     if (!items.length) return;
-    const order = addOrder({
-      tableNumber,
-      customerName: customerName || "Guest",
-      notes,
-      items,
-      ...totals,
-      waiter: auth?.name ?? "Waiter",
-    });
-    setPlaced(order);
-    setItems([]);
-    setCustomerName("");
-    setNotes("");
+
+    if (!(window as any).Razorpay) {
+      alert("Razorpay Payment SDK is loading. Please try again in a few seconds.");
+      return;
+    }
+
+    try {
+      const rzpOrderRes = await fetch("/api/razorpay/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: totals.total }),
+      });
+
+      if (!rzpOrderRes.ok) {
+        const errorData = await rzpOrderRes.json();
+        alert(errorData.error || "Failed to initialize payment order.");
+        return;
+      }
+
+      const rzpOrder = await rzpOrderRes.json();
+
+      const options = {
+        key: rzpOrder.key_id,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        name: "Cafe Milano",
+        description: `Table #${tableNumber} Checkout`,
+        order_id: rzpOrder.id,
+        handler: async function (response: any) {
+          const order = await addOrder({
+            tableNumber,
+            customerName: customerName || "Guest",
+            notes,
+            items,
+            ...totals,
+            waiter: auth?.name ?? "Waiter",
+            paymentId: response.razorpay_payment_id,
+            paymentOrderId: response.razorpay_order_id,
+            paymentSignature: response.razorpay_signature,
+          });
+          setPlaced(order);
+          setItems([]);
+          setCustomerName("");
+          setNotes("");
+        },
+        prefill: {
+          name: customerName || "Guest",
+        },
+        theme: {
+          color: "#E2A857", // POS theme color
+        },
+      };
+
+      const rzpay = new (window as any).Razorpay(options);
+      rzpay.open();
+    } catch (err) {
+      console.error("Payment flow error:", err);
+      alert("An unexpected error occurred during the payment flow.");
+    }
   };
 
   if (placed) {
@@ -164,7 +237,16 @@ export default function WaiterPOS() {
 
         <div className="grid grid-cols-2 gap-3 mt-4">
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Table</label>
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Table</label>
+              <button
+                type="button"
+                onClick={() => setShowAddTable(!showAddTable)}
+                className="text-[10px] text-primary hover:underline flex items-center gap-0.5"
+              >
+                <Plus className="w-3 h-3" /> Add
+              </button>
+            </div>
             <select
               value={tableNumber}
               onChange={(e) => setTableNumber(Number(e.target.value))}
@@ -185,6 +267,58 @@ export default function WaiterPOS() {
             />
           </div>
         </div>
+
+        {showAddTable && (
+          <motion.form
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onSubmit={handleAddTable}
+            className="mt-3 p-3 glass rounded-xl border border-primary/20 space-y-2.5"
+          >
+            <p className="text-xs font-semibold text-primary">Add New Table</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[9px] uppercase tracking-wider text-muted-foreground">Table #</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={newTableNumber}
+                  onChange={(e) => setNewTableNumber(e.target.value)}
+                  placeholder="e.g. 13"
+                  className="w-full bg-input/40 border border-border rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] uppercase tracking-wider text-muted-foreground">Capacity</label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={newTableCapacity}
+                  onChange={(e) => setNewTableCapacity(e.target.value)}
+                  placeholder="e.g. 4"
+                  className="w-full bg-input/40 border border-border rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setShowAddTable(false)}
+                className="px-3 py-1 rounded bg-muted/50 text-muted-foreground hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-3 py-1 rounded bg-gradient-gold text-gold-foreground font-semibold"
+              >
+                Add Table
+              </button>
+            </div>
+          </motion.form>
+        )}
 
         <div className="mt-4 max-h-[40vh] overflow-y-auto pr-1 space-y-2">
           {items.length === 0 && (

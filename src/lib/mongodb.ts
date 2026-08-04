@@ -32,7 +32,7 @@ export async function connectToDatabase() {
       bufferCommands: false,
     };
 
-    cached!.promise = mongoose.connect(MONGODB_URI!, opts).then((mongooseInstance) => {
+    cached!.promise = mongoose.connect(MONGODB_URI!, opts).then((mongooseInstance: any) => {
       return mongooseInstance;
     });
   }

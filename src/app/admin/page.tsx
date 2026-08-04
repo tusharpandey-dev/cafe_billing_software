@@ -4,10 +4,10 @@ import { useStore } from "@/lib/store";
 import { StatCard } from "@/components/StatCard";
 import { TrendingUp, ShoppingBag, CheckCircle2, Clock, Coffee, Users } from "lucide-react";
 import { motion } from "framer-motion";
-import { tables } from "@/data/tablesData";
 
 export default function AdminDashboard() {
   const orders = useStore((s) => s.orders);
+  const tables = useStore((s) => s.tables);
   const total = orders.length;
   const pending = orders.filter((o) => o.status === "pending").length;
   const preparing = orders.filter((o) => o.status === "preparing").length;

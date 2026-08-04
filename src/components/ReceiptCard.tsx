@@ -35,8 +35,8 @@ export function ReceiptCard({ order }: { order: Order }) {
           <span className="w-8 text-center">Qty</span>
           <span className="w-16 text-right">Total</span>
         </div>
-        {order.items.map((it) => (
-          <div key={it.id} className="flex text-xs py-1">
+        {order.items.map((it, idx) => (
+          <div key={it.id || `${it.name}-${idx}`} className="flex text-xs py-1">
             <span className="flex-1 truncate pr-2">{it.name}</span>
             <span className="w-8 text-center">{it.quantity}</span>
             <span className="w-16 text-right">₹{(it.price * it.quantity).toFixed(2)}</span>
