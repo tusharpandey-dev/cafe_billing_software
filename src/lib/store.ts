@@ -18,19 +18,21 @@ type State = {
   logout: () => void;
   addOrder: (o: Omit<Order, "id" | "createdAt" | "status">) => Order;
   updateStatus: (id: string, status: OrderStatus) => void;
-  addMenuItem: (m: Omit<MenuItem, "id">) => void;
-  updateMenuItem: (id: string, patch: Partial<MenuItem>) => void;
-  deleteMenuItem: (id: string) => void;
-  addCategory: (name: string) => void;
+  addMenuItem: (m: Omit<MenuItem, "id">) => Promise<void>;
+  updateMenuItem: (id: string, patch: Partial<MenuItem>) => Promise<void>;
+  deleteMenuItem: (id: string) => Promise<void>;
+  addCategory: (name: string) => Promise<void>;
+  setMenu: (menu: MenuItem[]) => void;
+  setCategories: (categories: string[]) => void;
 };
 
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
       auth: null,
-      orders: seedOrders,
-      menu: seedMenu,
-      categories: [...seedCats],
+      orders: [],
+      menu: [],
+      categories: [],
       login: (auth) => set({ auth }),
       logout: () => set({ auth: null }),
       addOrder: (o) => {
@@ -41,17 +43,66 @@ export const useStore = create<State>()(
       },
       updateStatus: (id, status) =>
         set({ orders: get().orders.map((o) => (o.id === id ? { ...o, status } : o)) }),
-      addMenuItem: (m) => {
-        const id = `mi-${Date.now()}`;
-        set({ menu: [{ ...m, id }, ...get().menu] });
+      setMenu: (menu) => set({ menu }),
+      setCategories: (categories) => set({ categories }),
+      addMenuItem: async (m) => {
+        try {
+          const res = await fetch("/api/menu", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(m),
+          });
+          if (res.ok) {
+            const newItem = await res.json();
+            set({ menu: [newItem, ...get().menu] });
+          }
+        } catch (e) {
+          console.error("Store error adding menu item:", e);
+        }
       },
-      updateMenuItem: (id, patch) =>
-        set({ menu: get().menu.map((m) => (m.id === id ? { ...m, ...patch } : m)) }),
-      deleteMenuItem: (id) => set({ menu: get().menu.filter((m) => m.id !== id) }),
-      addCategory: (name) => {
+      updateMenuItem: async (id, patch) => {
+        try {
+          const res = await fetch(`/api/menu/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(patch),
+          });
+          if (res.ok) {
+            const updated = await res.json();
+            set({ menu: get().menu.map((m) => (m.id === id ? updated : m)) });
+          }
+        } catch (e) {
+          console.error("Store error updating menu item:", e);
+        }
+      },
+      deleteMenuItem: async (id) => {
+        try {
+          const res = await fetch(`/api/menu/${id}`, {
+            method: "DELETE",
+          });
+          if (res.ok) {
+            set({ menu: get().menu.filter((m) => m.id !== id) });
+          }
+        } catch (e) {
+          console.error("Store error deleting menu item:", e);
+        }
+      },
+      addCategory: async (name) => {
         const n = name.trim();
         if (!n || get().categories.includes(n)) return;
-        set({ categories: [...get().categories, n] });
+        try {
+          const res = await fetch("/api/categories", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: n }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            set({ categories: [...get().categories, data.name] });
+          }
+        } catch (e) {
+          console.error("Store error adding category:", e);
+        }
       },
     }),
     { name: "cafe-milano-store", version: 2 }

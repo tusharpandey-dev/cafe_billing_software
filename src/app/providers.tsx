@@ -19,6 +19,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const login = useStore((s) => s.login);
   const logout = useStore((s) => s.logout);
+  const setMenu = useStore((s) => s.setMenu);
+  const setCategories = useStore((s) => s.setCategories);
 
   useEffect(() => {
     const verifySession = async () => {
@@ -37,12 +39,35 @@ export function Providers({ children }: { children: React.ReactNode }) {
       } catch (e) {
         console.error("Failed to verify session:", e);
         logout();
-      } finally {
-        setMounted(true);
       }
     };
-    verifySession();
-  }, [login, logout]);
+
+    const fetchMenuAndCategories = async () => {
+      try {
+        const [menuRes, catsRes] = await Promise.all([
+          fetch("/api/menu"),
+          fetch("/api/categories"),
+        ]);
+        if (menuRes.ok) {
+          const menuData = await menuRes.json();
+          setMenu(menuData);
+        }
+        if (catsRes.ok) {
+          const catsData = await catsRes.json();
+          setCategories(catsData);
+        }
+      } catch (e) {
+        console.error("Failed to load initial menu or categories:", e);
+      }
+    };
+
+    const init = async () => {
+      await Promise.all([verifySession(), fetchMenuAndCategories()]);
+      setMounted(true);
+    };
+
+    init();
+  }, [login, logout, setMenu, setCategories]);
 
   if (!mounted) {
     return null;
