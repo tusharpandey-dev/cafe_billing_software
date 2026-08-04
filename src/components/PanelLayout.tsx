@@ -14,7 +14,12 @@ export function PanelLayout({ items, title, children }: { items: NavItem[]; titl
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error("API logout failed:", e);
+    }
     logout();
     router.push("/login");
   };

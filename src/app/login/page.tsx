@@ -15,15 +15,25 @@ export default function Login() {
   const login = useStore((s) => s.login);
   const router = useRouter();
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const u = demoUsers[role];
-    if (email.trim().toLowerCase() === u.email && password === u.password) {
-      login({ role: u.role, name: u.name, email: u.email });
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, role }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Login failed.");
+        return;
+      }
+      login({ role: data.role, name: data.name, email: data.email });
       router.push(role === "admin" ? "/admin" : "/waiter");
-    } else {
-      setError("Invalid credentials. Use the demo credentials below.");
+    } catch (err) {
+      console.error(err);
+      setError("An unexpected error occurred. Please try again.");
     }
   };
 
