@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Coffee, Lock, Mail, Shield, Utensils } from "lucide-react";
+import { Coffee, Lock, Mail, Shield, Utensils, ChefHat } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { demoUsers, type Role } from "@/data/usersData";
 import { useRouter } from "next/navigation";
@@ -30,7 +30,13 @@ export default function Login() {
         return;
       }
       login({ role: data.role, name: data.name, email: data.email });
-      router.push(role === "admin" ? "/admin" : "/waiter");
+      if (role === "admin") {
+        router.push("/admin");
+      } else if (role === "kitchen") {
+        router.push("/kitchen");
+      } else {
+        router.push("/waiter");
+      }
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred. Please try again.");
@@ -59,19 +65,26 @@ export default function Login() {
         <h1 className="text-3xl font-display font-bold text-center gold-text">Cafe Milano</h1>
         <p className="text-center text-sm text-muted-foreground mt-1">Sign in to your POS</p>
 
-        <div className="grid grid-cols-2 gap-2 mt-6 p-1 glass rounded-xl">
-          {(["waiter", "admin"] as Role[]).map((r) => (
+        <div className="grid grid-cols-3 gap-1.5 mt-6 p-1 glass rounded-xl">
+          {(["waiter", "kitchen", "admin"] as Role[]).map((r) => (
             <button
               key={r}
+              type="button"
               onClick={() => setRole(r)}
-              className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition-all ${
                 role === r
-                  ? "bg-gradient-gold text-gold-foreground shadow-gold"
+                  ? "bg-gradient-gold text-gold-foreground shadow-gold font-semibold"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {r === "admin" ? <Shield className="w-4 h-4" /> : <Utensils className="w-4 h-4" />}
-              {r === "admin" ? "Admin" : "Waiter"}
+              {r === "admin" ? (
+                <Shield className="w-3.5 h-3.5" />
+              ) : r === "kitchen" ? (
+                <ChefHat className="w-3.5 h-3.5" />
+              ) : (
+                <Utensils className="w-3.5 h-3.5" />
+              )}
+              {r === "admin" ? "Admin" : r === "kitchen" ? "Kitchen" : "Waiter"}
             </button>
           ))}
         </div>
@@ -102,9 +115,9 @@ export default function Login() {
           {error && <p className="text-xs text-destructive">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-gradient-gold text-gold-foreground rounded-xl py-3 font-semibold shadow-gold hover:scale-[1.01] transition-transform"
+            className="w-full bg-gradient-gold text-gold-foreground rounded-xl py-3 font-semibold shadow-gold hover:scale-[1.01] transition-transform capitalize"
           >
-            Sign in as {role === "admin" ? "Admin" : "Waiter"}
+            Sign in as {role}
           </button>
         </form>
 
