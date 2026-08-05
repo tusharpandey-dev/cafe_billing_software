@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Coffee, Utensils, Shield, ArrowRight, Sparkles } from "lucide-react";
+import { Coffee, Utensils, Shield, ArrowRight, Sparkles, ChefHat } from "lucide-react";
 
 export default function Home() {
   return (
@@ -28,14 +28,14 @@ export default function Home() {
           >
             <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 mb-6">
               <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">Premium POS Suite</span>
+              <span className="text-xs uppercase tracking-widest text-muted-foreground">Premium POS & KDS Suite</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-display font-bold leading-[1.05]">
               Brew, bill &<br />
               <span className="gold-text">serve</span> with elegance.
             </h1>
             <p className="mt-6 text-lg text-muted-foreground max-w-md">
-              The complete cafe billing experience — waiter ordering, live kitchen flow, and printable receipts in one beautiful workspace.
+              The complete cafe billing & kitchen display system — waiter ordering, real-time kitchen display, and printable receipts in one workspace.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
@@ -62,9 +62,9 @@ export default function Home() {
           >
             {[
               { icon: <Utensils className="w-6 h-6" />, title: "Waiter Panel", desc: "Touch-friendly POS for fast order entry", to: "/login" },
+              { icon: <ChefHat className="w-6 h-6" />, title: "Kitchen Display (KDS)", desc: "Live ticket board, timers & audio alerts", to: "/login" },
               { icon: <Shield className="w-6 h-6" />, title: "Admin Panel", desc: "Live orders, sales & menu management", to: "/login" },
-              { icon: <Coffee className="w-6 h-6" />, title: "13 Categories", desc: "Pizzas, coffee, shakes & more", to: "/login" },
-              { icon: <Sparkles className="w-6 h-6" />, title: "Smart Billing", desc: "GST, receipt cards, instant print", to: "/login" },
+              { icon: <Sparkles className="w-6 h-6" />, title: "Smart Billing", desc: "GST, receipt cards, KOT print", to: "/login" },
             ].map((c, i) => (
               <motion.div
                 key={i}

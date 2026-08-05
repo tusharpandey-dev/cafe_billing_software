@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. If trying to access protected paths
-  if (pathname.startsWith("/admin") || pathname.startsWith("/waiter")) {
+  if (pathname.startsWith("/admin") || pathname.startsWith("/waiter") || pathname.startsWith("/kitchen")) {
     if (!token) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
@@ -43,6 +43,10 @@ export function middleware(request: NextRequest) {
     if (pathname.startsWith("/waiter") && payload.role !== "waiter") {
       return NextResponse.redirect(new URL("/login", request.url));
     }
+
+    if (pathname.startsWith("/kitchen") && payload.role !== "kitchen" && payload.role !== "admin") {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
   }
 
   // 2. If trying to access login page while already authenticated
@@ -53,6 +57,8 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL("/admin", request.url));
       } else if (payload.role === "waiter") {
         return NextResponse.redirect(new URL("/waiter", request.url));
+      } else if (payload.role === "kitchen") {
+        return NextResponse.redirect(new URL("/kitchen", request.url));
       }
     }
   }
@@ -61,5 +67,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/waiter/:path*", "/login"],
+  matcher: ["/admin/:path*", "/waiter/:path*", "/kitchen/:path*", "/login"],
 };
