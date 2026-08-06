@@ -26,9 +26,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const setTables = useStore((s) => s.setTables);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     const verifySession = async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", { signal });
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {
@@ -39,23 +42,27 @@ export function Providers({ children }: { children: React.ReactNode }) {
         } else {
           logout();
         }
-      } catch (e) {
-        console.error("Failed to verify session:", e);
-        logout();
+      } catch (e: any) {
+        if (e.name !== "AbortError") {
+          console.warn("Failed to verify session:", e.message || e);
+          logout();
+        }
       }
     };
 
     const fetchInitialData = async () => {
       const fetchSafe = async (url: string) => {
         try {
-          const res = await fetch(url);
+          const res = await fetch(url, { signal });
           if (res.ok) {
             return await res.json();
           }
-          console.error(`Failed to fetch ${url}: Status ${res.status}`);
+          console.warn(`Failed to fetch ${url}: Status ${res.status}`);
           return null;
-        } catch (e) {
-          console.error(`Failed to fetch ${url}:`, e);
+        } catch (e: any) {
+          if (e.name !== "AbortError") {
+            console.warn(`Could not connect to ${url} (server may be starting or offline):`, e.message || e);
+          }
           return null;
         }
       };
@@ -85,6 +92,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     init();
 
     return () => {
+      controller.abort();
       if (intervalId) clearInterval(intervalId);
     };
   }, [login, logout, setMenu, setCategories, setOrders, setTables]);
