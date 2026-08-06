@@ -46,32 +46,31 @@ export function Providers({ children }: { children: React.ReactNode }) {
     };
 
     const fetchInitialData = async () => {
-      try {
-        const [menuRes, catsRes, ordersRes, tablesRes] = await Promise.all([
-          fetch("/api/menu"),
-          fetch("/api/categories"),
-          fetch("/api/orders"),
-          fetch("/api/tables"),
-        ]);
-        if (menuRes.ok) {
-          const menuData = await menuRes.json();
-          setMenu(menuData);
+      const fetchSafe = async (url: string) => {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            return await res.json();
+          }
+          console.error(`Failed to fetch ${url}: Status ${res.status}`);
+          return null;
+        } catch (e) {
+          console.error(`Failed to fetch ${url}:`, e);
+          return null;
         }
-        if (catsRes.ok) {
-          const catsData = await catsRes.json();
-          setCategories(catsData);
-        }
-        if (ordersRes.ok) {
-          const ordersData = await ordersRes.json();
-          setOrders(ordersData);
-        }
-        if (tablesRes.ok) {
-          const tablesData = await tablesRes.json();
-          setTables(tablesData);
-        }
-      } catch (e) {
-        console.error("Failed to load initial data from database:", e);
-      }
+      };
+
+      const [menuData, catsData, ordersData, tablesData] = await Promise.all([
+        fetchSafe("/api/menu"),
+        fetchSafe("/api/categories"),
+        fetchSafe("/api/orders"),
+        fetchSafe("/api/tables"),
+      ]);
+
+      if (menuData) setMenu(menuData);
+      if (catsData) setCategories(catsData);
+      if (ordersData) setOrders(ordersData);
+      if (tablesData) setTables(tablesData);
     };
 
     let intervalId: NodeJS.Timeout;

@@ -9,16 +9,23 @@ export async function PATCH(
   try {
     await connectToDatabase();
     
-    const { id } = await params; // custom sequential ID e.g., 'ORD-1042'
-    const { status } = await request.json();
+    const { id } = await params;
+    const body = await request.json();
     
-    if (!status) {
-      return NextResponse.json({ error: "Order status is required." }, { status: 400 });
+    const updateObj: any = {};
+    if (body.status !== undefined) updateObj.status = body.status;
+    if (body.paymentStatus !== undefined) updateObj.paymentStatus = body.paymentStatus;
+    if (body.paymentId !== undefined) updateObj.paymentId = body.paymentId;
+    if (body.paymentOrderId !== undefined) updateObj.paymentOrderId = body.paymentOrderId;
+    if (body.paymentSignature !== undefined) updateObj.paymentSignature = body.paymentSignature;
+    
+    if (Object.keys(updateObj).length === 0) {
+      return NextResponse.json({ error: "No fields provided to update." }, { status: 400 });
     }
     
     const updatedOrder = await OrderModel.findOneAndUpdate(
       { id },
-      { $set: { status } },
+      { $set: updateObj },
       { new: true }
     );
     

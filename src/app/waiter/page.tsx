@@ -72,63 +72,26 @@ export default function WaiterPOS() {
   const place = async () => {
     if (!items.length) return;
 
-    if (!(window as any).Razorpay) {
-      alert("Razorpay Payment SDK is loading. Please try again in a few seconds.");
-      return;
-    }
-
     try {
-      const rzpOrderRes = await fetch("/api/razorpay/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: totals.total }),
+      const order = await addOrder({
+        tableNumber,
+        customerName: customerName || "Guest",
+        notes,
+        items,
+        ...totals,
+        waiter: auth?.name ?? "Waiter",
+        paymentId: "",
+        paymentOrderId: "",
+        paymentSignature: "",
+        paymentStatus: "pending",
       });
-
-      if (!rzpOrderRes.ok) {
-        const errorData = await rzpOrderRes.json();
-        alert(errorData.error || "Failed to initialize payment order.");
-        return;
-      }
-
-      const rzpOrder = await rzpOrderRes.json();
-
-      const options = {
-        key: rzpOrder.key_id,
-        amount: rzpOrder.amount,
-        currency: rzpOrder.currency,
-        name: "Cafe Milano",
-        description: `Table #${tableNumber} Checkout`,
-        order_id: rzpOrder.id,
-        handler: async function (response: any) {
-          const order = await addOrder({
-            tableNumber,
-            customerName: customerName || "Guest",
-            notes,
-            items,
-            ...totals,
-            waiter: auth?.name ?? "Waiter",
-            paymentId: response.razorpay_payment_id,
-            paymentOrderId: response.razorpay_order_id,
-            paymentSignature: response.razorpay_signature,
-          });
-          setPlaced(order);
-          setItems([]);
-          setCustomerName("");
-          setNotes("");
-        },
-        prefill: {
-          name: customerName || "Guest",
-        },
-        theme: {
-          color: "#E2A857", // POS theme color
-        },
-      };
-
-      const rzpay = new (window as any).Razorpay(options);
-      rzpay.open();
+      setPlaced(order);
+      setItems([]);
+      setCustomerName("");
+      setNotes("");
     } catch (err) {
-      console.error("Payment flow error:", err);
-      alert("An unexpected error occurred during the payment flow.");
+      console.error("Place order error:", err);
+      alert("An unexpected error occurred while placing the order.");
     }
   };
 

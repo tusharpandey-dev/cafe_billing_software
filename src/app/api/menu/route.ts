@@ -7,7 +7,14 @@ export async function GET() {
   try {
     await connectToDatabase();
     
-    const dbMenu = await MenuItemModel.find().sort({ createdAt: -1 });
+    let dbMenu = await MenuItemModel.find().sort({ createdAt: -1 });
+    
+    if (dbMenu.length === 0) {
+      const cleanSeedMenu = seedMenu.map(({ id, ...rest }) => rest);
+      await MenuItemModel.insertMany(cleanSeedMenu);
+      dbMenu = await MenuItemModel.find().sort({ createdAt: -1 });
+    }
+    
     return NextResponse.json(dbMenu);
   } catch (error: any) {
     console.error("Fetch menu items API error:", error);

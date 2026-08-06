@@ -14,8 +14,59 @@ const statusMeta: Record<OrderStatus, { label: string; color: string; icon: Reac
 };
 
 export default function AdminOrders() {
-  const { orders, updateStatus } = useStore();
+  const { orders, updateStatus, payOrder } = useStore();
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
+
+  const handlePay = async (order: any) => {
+    if (!(window as any).Razorpay) {
+      alert("Razorpay Payment SDK is loading. Please try again in a few seconds.");
+      return;
+    }
+
+    try {
+      const rzpOrderRes = await fetch("/api/razorpay/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: order.total }),
+      });
+
+      if (!rzpOrderRes.ok) {
+        const errorData = await rzpOrderRes.json();
+        alert(errorData.error || "Failed to initialize payment order.");
+        return;
+      }
+
+      const rzpOrder = await rzpOrderRes.json();
+
+      const options = {
+        key: rzpOrder.key_id,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        name: "Cafe Milano",
+        description: `Checkout for ${order.id} (Table #${order.tableNumber})`,
+        order_id: rzpOrder.id,
+        handler: async function (response: any) {
+          await payOrder(order.id, {
+            paymentId: response.razorpay_payment_id,
+            paymentOrderId: response.razorpay_order_id,
+            paymentSignature: response.razorpay_signature,
+          });
+        },
+        prefill: {
+          name: order.customerName || "Guest",
+        },
+        theme: {
+          color: "#E2A857",
+        },
+      };
+
+      const rzpay = new (window as any).Razorpay(options);
+      rzpay.open();
+    } catch (err) {
+      console.error("Payment flow error:", err);
+      alert("An unexpected error occurred during the payment flow.");
+    }
+  };
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -85,10 +136,19 @@ export default function AdminOrders() {
                   <p className="font-display font-bold text-lg">{o.id}</p>
                   <p className="text-xs text-muted-foreground">Table {o.tableNumber} · {o.customerName}</p>
                 </div>
-                <span className={`text-[10px] px-2 py-1 rounded-full uppercase tracking-wider border flex items-center gap-1 ${statusMeta[o.status].color}`}>
-                  {statusMeta[o.status].icon}
-                  {statusMeta[o.status].label}
-                </span>
+                <div className="flex flex-col gap-1 items-end">
+                  <span className={`text-[10px] px-2 py-1 rounded-full uppercase tracking-wider border flex items-center gap-1 ${statusMeta[o.status].color}`}>
+                    {statusMeta[o.status].icon}
+                    {statusMeta[o.status].label}
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider border font-medium ${
+                    o.paymentStatus === "paid"
+                      ? "bg-success/20 text-success border-success/40"
+                      : "bg-destructive/20 text-destructive border-destructive/40"
+                  }`}>
+                    {o.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-3 space-y-1 text-xs">
@@ -106,7 +166,7 @@ export default function AdminOrders() {
                 <span className="text-[10px] text-muted-foreground">{new Date(o.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
 
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2 mt-3 flex-wrap">
                 {o.status === "pending" && (
                   <button onClick={() => updateStatus(o.id, "preparing")} className="flex-1 bg-accent text-accent-foreground rounded-lg py-2 text-xs font-semibold hover:opacity-90">
                     Start
@@ -115,6 +175,11 @@ export default function AdminOrders() {
                 {o.status === "preparing" && (
                   <button onClick={() => updateStatus(o.id, "completed")} className="flex-1 bg-success text-background rounded-lg py-2 text-xs font-semibold hover:opacity-90">
                     Complete
+                  </button>
+                )}
+                {o.paymentStatus !== "paid" && (
+                  <button onClick={() => handlePay(o)} className="flex-1 bg-gradient-gold text-gold-foreground rounded-lg py-2 text-xs font-semibold hover:opacity-90 whitespace-nowrap">
+                    Collect Payment
                   </button>
                 )}
                 <button onClick={() => setOpenId(o.id)} className="px-3 py-2 glass rounded-lg text-xs flex items-center gap-1 hover:gold-border">

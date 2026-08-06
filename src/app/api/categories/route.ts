@@ -7,7 +7,14 @@ export async function GET() {
   try {
     await connectToDatabase();
     
-    const dbCats = await Category.find().sort({ createdAt: 1 });
+    let dbCats = await Category.find().sort({ createdAt: 1 });
+    
+    if (dbCats.length === 0) {
+      const defaultCats = seedCats.map((name) => ({ name }));
+      await Category.insertMany(defaultCats);
+      dbCats = await Category.find().sort({ createdAt: 1 });
+    }
+    
     const catNames = dbCats.map((c: any) => c.name);
     return NextResponse.json(catNames);
   } catch (error: any) {

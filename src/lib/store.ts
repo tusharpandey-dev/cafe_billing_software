@@ -21,6 +21,7 @@ type State = {
   logout: () => void;
   addOrder: (o: Omit<Order, "id" | "createdAt" | "status">) => Promise<Order>;
   updateStatus: (id: string, status: OrderStatus) => Promise<void>;
+  payOrder: (id: string, paymentDetails: { paymentId: string; paymentOrderId: string; paymentSignature: string }) => Promise<void>;
   addMenuItem: (m: Omit<MenuItem, "id">) => Promise<void>;
   updateMenuItem: (id: string, patch: Partial<MenuItem>) => Promise<void>;
   deleteMenuItem: (id: string) => Promise<void>;
@@ -99,6 +100,33 @@ export const useStore = create<State>()(
           }
         } catch (e) {
           console.error("Store error updating order status:", e);
+        }
+      },
+      payOrder: async (id, paymentDetails) => {
+        try {
+          const res = await fetch(`/api/orders/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              paymentStatus: "paid",
+              ...paymentDetails,
+            }),
+          });
+          if (res.ok) {
+            set({
+              orders: get().orders.map((o) =>
+                o.id === id
+                  ? {
+                      ...o,
+                      paymentStatus: "paid",
+                      ...paymentDetails,
+                    }
+                  : o
+              ),
+            });
+          }
+        } catch (e) {
+          console.error("Store error updating payment status:", e);
         }
       },
       setMenu: (menu) => set({ menu }),
