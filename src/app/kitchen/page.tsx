@@ -23,7 +23,8 @@ import {
   Flame,
   LayoutGrid,
   Kanban,
-  Bell
+  Bell,
+  Trash2
 } from "lucide-react";
 
 // Web Audio API Synthesizer for Kitchen Bell Chime
@@ -93,7 +94,7 @@ function OrderTimer({ createdAt }: { createdAt: number }) {
 }
 
 export default function KitchenScreen() {
-  const { orders, updateStatus } = useStore();
+  const { orders, updateStatus, deleteOrder } = useStore();
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [viewMode, setViewMode] = useState<"kanban" | "grid">("kanban");
   const [filterStation, setFilterStation] = useState<string>("all");
@@ -368,6 +369,7 @@ export default function KitchenScreen() {
                     checkedItems={checkedItems}
                     onToggleCheck={toggleCheckItem}
                     onUpdateStatus={updateStatus}
+                    onDeleteOrder={deleteOrder}
                     onOpenKot={() => setKotOrder(order)}
                   />
                 ))}
@@ -403,6 +405,7 @@ export default function KitchenScreen() {
                     checkedItems={checkedItems}
                     onToggleCheck={toggleCheckItem}
                     onUpdateStatus={updateStatus}
+                    onDeleteOrder={deleteOrder}
                     onOpenKot={() => setKotOrder(order)}
                   />
                 ))}
@@ -438,6 +441,7 @@ export default function KitchenScreen() {
                     checkedItems={checkedItems}
                     onToggleCheck={toggleCheckItem}
                     onUpdateStatus={updateStatus}
+                    onDeleteOrder={deleteOrder}
                     onOpenKot={() => setKotOrder(order)}
                   />
                 ))}
@@ -465,6 +469,7 @@ export default function KitchenScreen() {
                 checkedItems={checkedItems}
                 onToggleCheck={toggleCheckItem}
                 onUpdateStatus={updateStatus}
+                onDeleteOrder={deleteOrder}
                 onOpenKot={() => setKotOrder(order)}
               />
             ))}
@@ -557,6 +562,7 @@ function KitchenOrderCard({
   checkedItems,
   onToggleCheck,
   onUpdateStatus,
+  onDeleteOrder,
   onOpenKot,
 }: {
   order: Order;
@@ -564,6 +570,7 @@ function KitchenOrderCard({
   checkedItems: Record<string, boolean>;
   onToggleCheck: (orderId: string, itemId: string) => void;
   onUpdateStatus: (id: string, status: OrderStatus) => Promise<void>;
+  onDeleteOrder: (id: string) => Promise<void>;
   onOpenKot: () => void;
 }) {
   const visibleItems =
@@ -577,7 +584,7 @@ function KitchenOrderCard({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      className={`glass rounded-2xl p-4 border shadow-card transition-all hover:gold-border ${
+      className={`glass rounded-xl p-3 border shadow-card transition-all hover:gold-border ${
         order.status === "pending"
           ? "border-warning/40 bg-warning/5"
           : order.status === "preparing"
@@ -586,66 +593,77 @@ function KitchenOrderCard({
       }`}
     >
       {/* Ticket Header */}
-      <div className="flex items-start justify-between gap-2 pb-3 border-b border-border/40">
+      <div className="flex items-start justify-between gap-2 pb-2 border-b border-border/40">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="font-display font-black text-xl gold-text">Table {order.tableNumber}</span>
-            <span className="text-xs font-mono text-muted-foreground">({order.id})</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-display font-bold text-base gold-text">Table {order.tableNumber}</span>
+            <span className="text-[10px] font-mono text-muted-foreground">({order.id})</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Customer: <span className="text-foreground font-medium">{order.customerName}</span> · Waiter: {order.waiter}
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Customer: <span className="text-foreground font-semibold">{order.customerName}</span> · Waiter: {order.waiter}
           </p>
         </div>
-        <OrderTimer createdAt={order.createdAt} />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (confirm("Are you sure you want to delete this order?")) {
+              onDeleteOrder(order.id);
+            }
+          }}
+          className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
+          title="Delete Order"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Special Kitchen Notes */}
       {order.notes && (
-        <div className="mt-3 p-2.5 rounded-xl bg-warning/15 border border-warning/40 flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
-          <div className="text-xs">
-            <span className="font-bold text-warning uppercase tracking-wider block text-[10px]">Special Note:</span>
+        <div className="mt-2 p-2 rounded-lg bg-warning/10 border border-warning/30 flex items-start gap-1.5">
+          <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
+          <div className="text-[11px]">
+            <span className="font-bold text-warning uppercase tracking-wider block text-[9px]">Special Note:</span>
             <span className="text-foreground font-semibold">{order.notes}</span>
           </div>
         </div>
       )}
 
       {/* Items Checklist */}
-      <div className="mt-3 space-y-2">
+      <div className="mt-2 space-y-1.5">
         {visibleItems.map((it, idx) => {
           const isChecked = !!checkedItems[`${order.id}_${it.id}`];
           return (
             <div
               key={it.id || `${it.name}-${idx}`}
               onClick={() => onToggleCheck(order.id, it.id)}
-              className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition-all border ${
+              className={`flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-all border ${
                 isChecked
                   ? "bg-muted/40 border-border/30 line-through text-muted-foreground"
                   : "glass hover:border-primary/40 text-foreground"
               }`}
             >
-              <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                 <button type="button" className="text-primary shrink-0">
                   {isChecked ? (
-                    <CheckSquare className="w-4 h-4 text-success" />
+                    <CheckSquare className="w-3.5 h-3.5 text-success" />
                   ) : (
-                    <Square className="w-4 h-4 text-muted-foreground" />
+                    <Square className="w-3.5 h-3.5 text-muted-foreground" />
                   )}
                 </button>
-                <span className="text-xl">{it.emoji}</span>
+                <span className="text-base">{it.emoji}</span>
                 <div className="min-w-0">
-                  <p className={`text-sm font-bold truncate ${isChecked ? "text-muted-foreground" : ""}`}>
+                  <p className={`text-xs font-bold truncate ${isChecked ? "text-muted-foreground" : ""}`}>
                     {it.name}
                   </p>
-                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    {it.veg ? <Leaf className="w-3 h-3 text-success" /> : <Drumstick className="w-3 h-3 text-destructive" />}
+                  <span className="text-[9px] text-muted-foreground flex items-center gap-1">
+                    {it.veg ? <Leaf className="w-2.5 h-2.5 text-success" /> : <Drumstick className="w-2.5 h-2.5 text-destructive" />}
                     {it.category}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-base font-black px-2.5 py-1 rounded-lg bg-gradient-gold text-gold-foreground shadow-gold">
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-gradient-gold text-gold-foreground shadow-sm">
                   ×{it.quantity}
                 </span>
               </div>
@@ -655,39 +673,39 @@ function KitchenOrderCard({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-border/40">
+      <div className="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-border/40">
         <button
           onClick={onOpenKot}
-          className="px-3 py-2 glass rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:gold-border transition-all text-muted-foreground hover:text-foreground"
+          className="px-2 py-1 glass rounded-lg text-[11px] font-semibold flex items-center gap-1 hover:gold-border transition-all text-muted-foreground hover:text-foreground"
         >
-          <Printer className="w-3.5 h-3.5 text-primary" /> KOT
+          <Printer className="w-3 h-3 text-primary" /> KOT
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {order.status === "pending" && (
             <button
               onClick={() => onUpdateStatus(order.id, "preparing")}
-              className="px-4 py-2 bg-accent text-accent-foreground rounded-xl text-xs font-bold hover:scale-[1.02] shadow-md transition-all flex items-center gap-1.5"
+              className="px-2.5 py-1 bg-accent text-accent-foreground rounded-lg text-[11px] font-bold hover:scale-[1.02] shadow-sm transition-all flex items-center gap-1"
             >
-              <Flame className="w-4 h-4" /> Start Cooking
+              <Flame className="w-3.5 h-3.5" /> Start
             </button>
           )}
 
           {order.status === "preparing" && (
             <button
               onClick={() => onUpdateStatus(order.id, "completed")}
-              className="px-4 py-2 bg-success text-background rounded-xl text-xs font-bold hover:scale-[1.02] shadow-md transition-all flex items-center gap-1.5"
+              className="px-2.5 py-1 bg-success text-background rounded-lg text-[11px] font-bold hover:scale-[1.02] shadow-sm transition-all flex items-center gap-1"
             >
-              <CheckCircle2 className="w-4 h-4" /> Mark Ready
+              <CheckCircle2 className="w-3.5 h-3.5" /> Ready
             </button>
           )}
 
           {order.status === "completed" && (
             <button
               onClick={() => onUpdateStatus(order.id, "preparing")}
-              className="px-3 py-2 glass rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground flex items-center gap-1"
+              className="px-2 py-1 glass rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground flex items-center gap-1"
             >
-              <RotateCcw className="w-3.5 h-3.5" /> Recall
+              <RotateCcw className="w-3 h-3" /> Recall
             </button>
           )}
         </div>

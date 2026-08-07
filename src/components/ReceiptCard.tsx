@@ -1,8 +1,48 @@
 import { motion } from "framer-motion";
-import type { Order } from "@/data/ordersData";
+import type { Order, OrderItem } from "@/data/ordersData";
 import { Printer, Download } from "lucide-react";
+import { useStore } from "@/lib/store";
 
 export function ReceiptCard({ order }: { order: Order }) {
+  const orders = useStore((s) => s.orders);
+  
+  // Find all unpaid orders for the same table to show consolidated bill
+  const tableOrders = order.paymentStatus === "pending"
+    ? orders.filter((o) => o.tableNumber === order.tableNumber && o.paymentStatus === "pending")
+    : [order];
+
+  const isConsolidated = tableOrders.length > 1;
+
+  const consolidatedItems: OrderItem[] = [];
+  const itemsToConsolidate = isConsolidated
+    ? tableOrders.flatMap((o) => o.items)
+    : order.items;
+
+  itemsToConsolidate.forEach((item) => {
+    const existing = consolidatedItems.find((i) => i.id === item.id);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      consolidatedItems.push({ ...item });
+    }
+  });
+
+  const subtotal = isConsolidated
+    ? tableOrders.reduce((sum, o) => sum + o.subtotal, 0)
+    : order.subtotal;
+  const gst = isConsolidated
+    ? tableOrders.reduce((sum, o) => sum + o.gst, 0)
+    : order.gst;
+  const total = isConsolidated
+    ? tableOrders.reduce((sum, o) => sum + o.total, 0)
+    : order.total;
+  const id = isConsolidated
+    ? tableOrders.map((o) => o.id).join(" + ")
+    : order.id;
+  const notes = isConsolidated
+    ? tableOrders.map((o) => o.notes).filter(Boolean).join(" | ")
+    : order.notes;
+
   const date = new Date(order.createdAt);
   return (
     <motion.div
@@ -19,7 +59,7 @@ export function ReceiptCard({ order }: { order: Order }) {
 
       <div className="flex justify-between text-xs mt-3 mb-3">
         <div>
-          <p>Bill: <span className="font-semibold">{order.id}</span></p>
+          <p>Bill: <span className="font-semibold">{id}</span></p>
           <p>Table: <span className="font-semibold">#{order.tableNumber}</span></p>
         </div>
         <div className="text-right">
@@ -35,7 +75,7 @@ export function ReceiptCard({ order }: { order: Order }) {
           <span className="w-8 text-center">Qty</span>
           <span className="w-16 text-right">Total</span>
         </div>
-        {order.items.map((it, idx) => (
+        {consolidatedItems.map((it, idx) => (
           <div key={it.id || `${it.name}-${idx}`} className="flex text-xs py-1">
             <span className="flex-1 truncate pr-2">{it.name}</span>
             <span className="w-8 text-center">{it.quantity}</span>
@@ -45,14 +85,14 @@ export function ReceiptCard({ order }: { order: Order }) {
       </div>
 
       <div className="border-t border-dashed border-[oklch(0.18_0.02_60_/_30%)] mt-2 pt-2 text-xs space-y-1">
-        <div className="flex justify-between"><span>Subtotal</span><span>₹{order.subtotal.toFixed(2)}</span></div>
-        <div className="flex justify-between"><span>GST (5%)</span><span>₹{order.gst.toFixed(2)}</span></div>
+        <div className="flex justify-between"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+        <div className="flex justify-between"><span>GST (5%)</span><span>₹{gst.toFixed(2)}</span></div>
         <div className="flex justify-between font-bold text-base mt-1 pt-1 border-t border-dashed border-[oklch(0.18_0.02_60_/_30%)]">
-          <span>TOTAL</span><span>₹{order.total.toFixed(2)}</span>
+          <span>TOTAL</span><span>₹{total.toFixed(2)}</span>
         </div>
       </div>
 
-      {order.notes && <p className="text-[10px] italic mt-3 opacity-70">Note: {order.notes}</p>}
+      {notes && <p className="text-[10px] italic mt-3 opacity-70">Note: {notes}</p>}
 
       <div className="text-center mt-4 border-t border-dashed border-[oklch(0.18_0.02_60_/_30%)] pt-3">
         <p className="text-xs font-semibold">Thank you · Visit Again</p>

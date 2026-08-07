@@ -9,7 +9,7 @@ import type { OrderItem } from "@/data/ordersData";
 import { ReceiptCard } from "@/components/ReceiptCard";
 
 export default function WaiterPOS() {
-  const { addOrder, auth, menu: menuItems, categories, tables, addTable } = useStore();
+  const { addOrder, updateOrderItems, orders, auth, menu: menuItems, categories, tables, addTable } = useStore();
   const [activeCat, setActiveCat] = useState<string>(categories[0] ?? "");
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -17,6 +17,16 @@ export default function WaiterPOS() {
   const [customerName, setCustomerName] = useState("");
   const [notes, setNotes] = useState("");
   const [placed, setPlaced] = useState<null | ReturnType<typeof useStore.getState>["orders"][number]>(null);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+
+  const activeOrderForTable = useMemo(() => {
+    return orders.find(
+      (o) =>
+        o.tableNumber === tableNumber &&
+        o.paymentStatus === "pending" &&
+        o.status !== "completed"
+    );
+  }, [orders, tableNumber]);
 
   const [showAddTable, setShowAddTable] = useState(false);
   const [newTableNumber, setNewTableNumber] = useState("");
@@ -73,24 +83,48 @@ export default function WaiterPOS() {
     if (!items.length) return;
 
     try {
-      const order = await addOrder({
-        tableNumber,
-        customerName: customerName || "Guest",
-        notes,
-        items,
-        ...totals,
-        waiter: auth?.name ?? "Waiter",
-        paymentId: "",
-        paymentOrderId: "",
-        paymentSignature: "",
-        paymentStatus: "pending",
-      });
-      setPlaced(order);
+      if (editingOrderId) {
+        const updated = await updateOrderItems(editingOrderId, items, notes);
+        if (updated) {
+          setPlaced(updated);
+        } else {
+          setPlaced({
+            id: editingOrderId,
+            tableNumber,
+            customerName: customerName || "Guest",
+            notes,
+            items,
+            ...totals,
+            waiter: auth?.name ?? "Waiter",
+            paymentId: "",
+            paymentOrderId: "",
+            paymentSignature: "",
+            paymentStatus: "pending",
+            status: "pending",
+            createdAt: Date.now(),
+          });
+        }
+        setEditingOrderId(null);
+      } else {
+        const order = await addOrder({
+          tableNumber,
+          customerName: customerName || "Guest",
+          notes,
+          items,
+          ...totals,
+          waiter: auth?.name ?? "Waiter",
+          paymentId: "",
+          paymentOrderId: "",
+          paymentSignature: "",
+          paymentStatus: "pending",
+        });
+        setPlaced(order);
+      }
       setItems([]);
       setCustomerName("");
       setNotes("");
     } catch (err) {
-      console.error("Place order error:", err);
+      console.error("Place/update order error:", err);
       alert("An unexpected error occurred while placing the order.");
     }
   };
@@ -231,6 +265,46 @@ export default function WaiterPOS() {
           </div>
         </div>
 
+        {activeOrderForTable && !editingOrderId && (
+          <div className="mt-3 p-3 rounded-xl bg-primary/10 border border-primary/20 flex flex-col gap-2 shadow-sm">
+            <p className="text-xs text-foreground leading-relaxed">
+              💡 Table <strong>{tableNumber}</strong> has an active unpaid order (ID: <strong>{activeOrderForTable.id}</strong>).
+            </p>
+            <button
+              onClick={() => {
+                setItems(activeOrderForTable.items);
+                setCustomerName(activeOrderForTable.customerName);
+                setNotes(activeOrderForTable.notes ?? "");
+                setEditingOrderId(activeOrderForTable.id);
+              }}
+              type="button"
+              className="text-xs font-semibold px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all text-center self-start shadow-sm"
+            >
+              Load Order to Add Items
+            </button>
+          </div>
+        )}
+
+        {editingOrderId && (
+          <div className="mt-3 p-3 rounded-xl bg-warning/10 border border-warning/30 flex items-center justify-between gap-2 shadow-sm">
+            <span className="text-xs text-foreground font-medium">
+              ✏️ Modifying order <strong>{editingOrderId}</strong>
+            </span>
+            <button
+              onClick={() => {
+                setItems([]);
+                setCustomerName("");
+                setNotes("");
+                setEditingOrderId(null);
+              }}
+              type="button"
+              className="text-xs font-bold text-destructive hover:bg-destructive/10 px-2 py-1 rounded-md transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         {showAddTable && (
           <motion.form
             initial={{ opacity: 0, y: -10 }}
@@ -338,7 +412,7 @@ export default function WaiterPOS() {
           disabled={!items.length}
           className="w-full mt-4 bg-gradient-gold text-gold-foreground rounded-xl py-3 font-semibold shadow-gold flex items-center justify-center gap-2 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed hover:scale-[1.01] transition-transform"
         >
-          <Send className="w-4 h-4" /> Place Order
+          <Send className="w-4 h-4" /> {editingOrderId ? "Update Order" : "Place Order"}
         </button>
       </div>
     </div>

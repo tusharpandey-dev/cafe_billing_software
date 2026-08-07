@@ -21,6 +21,8 @@ type State = {
   logout: () => void;
   addOrder: (o: Omit<Order, "id" | "createdAt" | "status">) => Promise<Order>;
   updateStatus: (id: string, status: OrderStatus) => Promise<void>;
+  deleteOrder: (id: string) => Promise<void>;
+  updateOrderItems: (id: string, items: OrderItem[], notes?: string) => Promise<Order | undefined>;
   payOrder: (id: string, paymentDetails: { paymentId: string; paymentOrderId: string; paymentSignature: string }) => Promise<void>;
   addMenuItem: (m: Omit<MenuItem, "id">) => Promise<void>;
   updateMenuItem: (id: string, patch: Partial<MenuItem>) => Promise<void>;
@@ -100,6 +102,37 @@ export const useStore = create<State>()(
           }
         } catch (e) {
           console.error("Store error updating order status:", e);
+        }
+      },
+      deleteOrder: async (id) => {
+        try {
+          const res = await fetch(`/api/orders/${id}`, {
+            method: "DELETE",
+          });
+          if (res.ok) {
+            set({ orders: get().orders.filter((o) => o.id !== id) });
+          }
+        } catch (e) {
+          console.error("Store error deleting order:", e);
+        }
+      },
+      updateOrderItems: async (id, items, notes) => {
+        const { subtotal, gst, total } = calcTotals(items);
+        try {
+          const res = await fetch(`/api/orders/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items, subtotal, gst, total, notes }),
+          });
+          if (res.ok) {
+            const updatedOrder = await res.json();
+            set({
+              orders: get().orders.map((o) => (o.id === id ? updatedOrder : o)),
+            });
+            return updatedOrder;
+          }
+        } catch (e) {
+          console.error("Store error updating order items:", e);
         }
       },
       payOrder: async (id, paymentDetails) => {
