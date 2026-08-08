@@ -77,6 +77,14 @@ const OrderSchema = new Schema(
       enum: ["pending", "paid", "failed"],
       default: "pending",
     },
+    restaurantId: {
+      type: String,
+      default: "default-restaurant",
+    },
+    branchId: {
+      type: String,
+      default: "default-branch",
+    },
   },
   {
     timestamps: true,
@@ -84,3 +92,4 @@ const OrderSchema = new Schema(
 );
 
 export const OrderModel = mongoose.models.Order || mongoose.model("Order", OrderSchema);
+

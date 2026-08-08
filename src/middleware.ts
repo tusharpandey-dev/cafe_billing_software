@@ -23,6 +23,16 @@ export function middleware(request: NextRequest) {
 
   // 1. If trying to access protected paths
   if (pathname.startsWith("/admin") || pathname.startsWith("/waiter") || pathname.startsWith("/kitchen")) {
+    if (pathname === "/waiter/setup") {
+      if (token) {
+        const payload = parseJwt(token);
+        if (payload && payload.role === "waiter") {
+          return NextResponse.redirect(new URL("/waiter", request.url));
+        }
+      }
+      return NextResponse.next();
+    }
+
     if (!token) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
@@ -40,8 +50,16 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (pathname.startsWith("/waiter") && payload.role !== "waiter") {
-      return NextResponse.redirect(new URL("/login", request.url));
+    if (pathname.startsWith("/waiter")) {
+      if (payload.role !== "waiter") {
+        return NextResponse.redirect(new URL("/login", request.url));
+      }
+      if (payload.mustChangePassword && pathname !== "/waiter/change-password") {
+        return NextResponse.redirect(new URL("/waiter/change-password", request.url));
+      }
+      if (!payload.mustChangePassword && pathname === "/waiter/change-password") {
+        return NextResponse.redirect(new URL("/waiter", request.url));
+      }
     }
 
     if (pathname.startsWith("/kitchen") && payload.role !== "kitchen" && payload.role !== "admin") {

@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, Trash2, Send, Search, Leaf, Drumstick, CheckCircle2 } from "lucide-react";
 import type { MenuItem } from "@/data/menuData";
@@ -9,7 +10,20 @@ import type { OrderItem } from "@/data/ordersData";
 import { ReceiptCard } from "@/components/ReceiptCard";
 
 export default function WaiterPOS() {
+  const router = useRouter();
   const { addOrder, updateOrderItems, orders, auth, menu: menuItems, categories, tables, addTable } = useStore();
+
+  useEffect(() => {
+    const devId = localStorage.getItem("waiter_device_id");
+    if (!devId) {
+      router.push("/waiter/setup");
+      return;
+    }
+    if (auth?.mustChangePassword) {
+      router.push("/waiter/change-password");
+      return;
+    }
+  }, [auth, router]);
   const [activeCat, setActiveCat] = useState<string>(categories[0] ?? "");
   const [search, setSearch] = useState("");
   const [items, setItems] = useState<OrderItem[]>([]);

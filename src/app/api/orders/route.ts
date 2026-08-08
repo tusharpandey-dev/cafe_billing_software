@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { OrderModel } from "@/models/Order";
+import { getAuthPayload } from "@/lib/auth";
 
 export async function GET() {
   try {
     await connectToDatabase();
-    const orders = await OrderModel.find().sort({ createdAt: -1 });
+    const payload = await getAuthPayload();
+    const filter: any = {};
+    if (payload && payload.role === "waiter") {
+      filter.restaurantId = payload.restaurantId || "default-restaurant";
+      filter.branchId = payload.branchId || "default-branch";
+    }
+
+    const orders = await OrderModel.find(filter).sort({ createdAt: -1 });
     return NextResponse.json(orders);
   } catch (error: any) {
     console.error("Fetch orders API error:", error);
@@ -16,6 +24,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     await connectToDatabase();
+    const payload = await getAuthPayload();
     
     const body = await request.json();
     const {
@@ -66,6 +75,8 @@ export async function POST(request: Request) {
       paymentOrderId: paymentOrderId || "",
       paymentSignature: paymentSignature || "",
       paymentStatus: paymentId ? "paid" : "pending",
+      restaurantId: payload?.restaurantId || "default-restaurant",
+      branchId: payload?.branchId || "default-branch",
     });
 
     return NextResponse.json(newOrder);
