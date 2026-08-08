@@ -25,15 +25,15 @@ export function PanelLayout({ items, title, children }: { items: NavItem[]; titl
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar */}
+    <div className="h-screen w-screen overflow-hidden flex bg-background">
+      {/* Sidebar - Fixed & Non-Scrollable */}
       <motion.aside
         initial={{ x: -40, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="hidden md:flex w-64 flex-col glass-strong border-r border-border/50 p-5"
+        className="hidden md:flex w-64 h-screen shrink-0 flex-col glass-strong border-r border-border/50 p-5 select-none"
       >
-        <Link href="/" className="flex items-center gap-3 mb-10">
+        <Link href="/" className="flex items-center gap-3 mb-10 shrink-0">
           <div className="w-11 h-11 rounded-xl bg-gradient-gold flex items-center justify-center shadow-gold">
             <Coffee className="w-5 h-5 text-gold-foreground" />
           </div>
@@ -43,14 +43,14 @@ export function PanelLayout({ items, title, children }: { items: NavItem[]; titl
           </div>
         </Link>
 
-        <nav className="flex flex-col gap-1 flex-1">
+        <nav className="flex flex-col gap-1 flex-1 overflow-y-auto scrollbar-none">
           {items.map((item) => {
             const active = pathname === item.to;
             return (
               <Link
                 key={item.to}
                 href={item.to}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all shrink-0 ${
                   active
                     ? "bg-gradient-gold text-gold-foreground shadow-gold"
                     : "text-muted-foreground hover:text-foreground hover:bg-card/60"
@@ -63,10 +63,10 @@ export function PanelLayout({ items, title, children }: { items: NavItem[]; titl
           })}
         </nav>
 
-        <div className="border-t border-border/50 pt-4 mt-4">
+        <div className="border-t border-border/50 pt-4 mt-auto shrink-0">
           <div className="px-3 py-2 mb-2">
             <p className="text-xs text-muted-foreground">Signed in as</p>
-            <p className="text-sm font-semibold text-foreground">{auth?.name}</p>
+            <p className="text-sm font-semibold text-foreground truncate">{auth?.name}</p>
             <p className="text-[10px] text-muted-foreground capitalize">{auth?.role}</p>
           </div>
           <button
@@ -89,7 +89,8 @@ export function PanelLayout({ items, title, children }: { items: NavItem[]; titl
         <button onClick={handleLogout} className="text-xs text-muted-foreground">Logout</button>
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main Content Area - Independently Scrollable */}
+      <div className="flex-1 h-screen overflow-y-auto min-w-0 flex flex-col">
         <main className="flex-1 min-w-0 p-4 md:p-8 pt-20 md:pt-8">
           {/* Mobile nav pills */}
           <div className="md:hidden flex gap-2 overflow-x-auto pb-3 mb-4 -mx-4 px-4">

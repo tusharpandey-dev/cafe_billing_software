@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { StatCard } from "@/components/StatCard";
 import { TrendingUp, ShoppingBag, CheckCircle2, Clock, Coffee, Users } from "lucide-react";
@@ -8,6 +9,12 @@ import { motion } from "framer-motion";
 export default function AdminDashboard() {
   const orders = useStore((s) => s.orders);
   const tables = useStore((s) => s.tables);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const total = orders.length;
   const pending = orders.filter((o) => o.status === "pending").length;
   const preparing = orders.filter((o) => o.status === "preparing").length;
@@ -29,6 +36,18 @@ export default function AdminDashboard() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
   const maxCat = Math.max(1, ...catEntries.map(([, v]) => v));
+
+  if (!mounted) {
+    return (
+      <div>
+        <div className="flex items-end justify-between flex-wrap gap-3 mb-6">
+          <div>
+            <h1 className="text-3xl font-display font-bold">Dashboard</h1>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
