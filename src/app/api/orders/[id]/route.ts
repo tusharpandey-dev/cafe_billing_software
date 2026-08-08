@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { OrderModel } from "@/models/Order";
+import { getAuthPayload } from "@/lib/auth";
 
 export async function PATCH(
   request: Request,
@@ -10,6 +11,23 @@ export async function PATCH(
     await connectToDatabase();
     
     const { id } = await params;
+    const payload = await getAuthPayload();
+
+    // Fetch the order first to verify ownership
+    const order = await OrderModel.findOne({ id });
+    if (!order) {
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    }
+
+    // Branch scoping validation
+    if (payload && payload.role === "waiter") {
+      const waitRestId = payload.restaurantId || "default-restaurant";
+      const waitBranchId = payload.branchId || "default-branch";
+      if (order.restaurantId !== waitRestId || order.branchId !== waitBranchId) {
+        return NextResponse.json({ error: "You are not authorized to access this branch." }, { status: 403 });
+      }
+    }
+
     const body = await request.json();
     
     const updateObj: any = {};
@@ -34,10 +52,6 @@ export async function PATCH(
       { new: true }
     );
     
-    if (!updatedOrder) {
-      return NextResponse.json({ error: "Order not found." }, { status: 404 });
-    }
-    
     return NextResponse.json(updatedOrder);
   } catch (error: any) {
     console.error("Update order status API error:", error);
@@ -52,10 +66,23 @@ export async function DELETE(
   try {
     await connectToDatabase();
     const { id } = await params;
-    const deletedOrder = await OrderModel.findOneAndDelete({ id });
-    if (!deletedOrder) {
+    const payload = await getAuthPayload();
+
+    const order = await OrderModel.findOne({ id });
+    if (!order) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
+
+    // Branch scoping validation
+    if (payload && payload.role === "waiter") {
+      const waitRestId = payload.restaurantId || "default-restaurant";
+      const waitBranchId = payload.branchId || "default-branch";
+      if (order.restaurantId !== waitRestId || order.branchId !== waitBranchId) {
+        return NextResponse.json({ error: "You are not authorized to access this branch." }, { status: 403 });
+      }
+    }
+
+    await OrderModel.deleteOne({ id });
     return NextResponse.json({ success: true, message: "Order deleted successfully" });
   } catch (error: any) {
     console.error("Delete order API error:", error);

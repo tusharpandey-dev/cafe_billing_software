@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
+import { connectToDatabase } from "@/lib/mongodb";
+import { User } from "@/models/User";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
 
@@ -21,12 +23,29 @@ export async function GET(request: Request) {
         role: string;
       };
 
+      await connectToDatabase();
+      const user = await User.findById(decoded.id);
+
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized. User not found." }, { status: 401 });
+      }
+
+      if (user.status === "inactive") {
+        return NextResponse.json({ error: "Unauthorized. Your account is inactive." }, { status: 403 });
+      }
+
       return NextResponse.json({
         authenticated: true,
         user: {
-          role: decoded.role,
-          name: decoded.name,
-          email: decoded.email,
+          id: user._id,
+          role: user.role,
+          name: user.name,
+          email: user.email || "",
+          username: user.username || "",
+          employeeId: user.employeeId || "",
+          branchId: user.branchId || "default-branch",
+          restaurantId: user.restaurantId || "default-restaurant",
+          mustChangePassword: user.mustChangePassword || false,
         },
       });
     } catch (err) {

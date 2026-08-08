@@ -67,6 +67,9 @@ export function PanelLayout({ items, title, children }: { items: NavItem[]; titl
           <div className="px-3 py-2 mb-2">
             <p className="text-xs text-muted-foreground">Signed in as</p>
             <p className="text-sm font-semibold text-foreground">{auth?.name}</p>
+            {auth?.employeeId && (
+              <p className="text-xs text-gold font-mono font-semibold">ID: {auth.employeeId}</p>
+            )}
             <p className="text-[10px] text-muted-foreground capitalize">{auth?.role}</p>
           </div>
           <button

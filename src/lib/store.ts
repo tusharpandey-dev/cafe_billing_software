@@ -9,7 +9,16 @@ export const GST_RATE = 0.05;
 
 export type Table = { id: string; number: number; capacity: number };
 
-type Auth = { role: Role; name: string; email: string } | null;
+type Auth = { 
+  role: Role; 
+  name: string; 
+  email: string; 
+  username?: string;
+  employeeId?: string;
+  branchId?: string;
+  restaurantId?: string;
+  mustChangePassword?: boolean;
+} | null;
 
 type State = {
   auth: Auth;

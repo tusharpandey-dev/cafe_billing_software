@@ -19,10 +19,13 @@ export default function Login() {
     e.preventDefault();
     setError("");
     try {
+      const deviceId = role === "waiter" ? localStorage.getItem("waiter_device_id") || "" : "";
+      const deviceName = role === "waiter" ? localStorage.getItem("waiter_device_name") || "Browser Login" : "";
+
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role }),
+        body: JSON.stringify({ email, password, role, deviceId, deviceName }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -44,7 +47,8 @@ export default function Login() {
   };
 
   const fill = () => {
-    const u = demoUsers[role];
+    if (role === "waiter") return;
+    const u = demoUsers[role as "admin" | "kitchen"];
     setEmail(u.email);
     setPassword(u.password);
   };
@@ -93,9 +97,9 @@ export default function Login() {
           <div className="relative">
             <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
-              type="email"
+              type="text"
               required
-              placeholder="Email address"
+              placeholder="Email, Username or Waiter ID"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-input/50 border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
@@ -122,14 +126,22 @@ export default function Login() {
         </form>
 
         <div className="mt-6 p-4 glass rounded-xl text-xs">
-          <div className="flex items-center justify-between mb-2">
-            <p className="uppercase tracking-widest text-muted-foreground">Demo Credentials</p>
-            <button onClick={fill} className="text-primary hover:underline">Auto-fill</button>
-          </div>
-          <p className="text-muted-foreground">
-            <span className="text-foreground font-semibold capitalize">{role}:</span>{" "}
-            {demoUsers[role].email} / {demoUsers[role].password}
-          </p>
+          {role === "waiter" ? (
+            <p className="text-muted-foreground text-center py-1 font-medium">
+              ⚠️ Waiters must log in using the credentials created by the Administrator.
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <p className="uppercase tracking-widest text-muted-foreground">Demo Credentials</p>
+                <button onClick={fill} className="text-primary hover:underline">Auto-fill</button>
+              </div>
+              <p className="text-muted-foreground">
+                <span className="text-foreground font-semibold capitalize">{role}:</span>{" "}
+                {demoUsers[role as "admin" | "kitchen"].email} / {demoUsers[role as "admin" | "kitchen"].password}
+              </p>
+            </>
+          )}
         </div>
       </motion.div>
     </div>
