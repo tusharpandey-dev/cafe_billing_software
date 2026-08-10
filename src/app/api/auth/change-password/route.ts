@@ -35,7 +35,6 @@ export async function POST(request: Request) {
 
     const hashedNewPassword = await bcryptjs.hash(newPassword, 10);
     user.password = hashedNewPassword;
-    user.plainPassword = newPassword;
     user.mustChangePassword = false;
     await user.save();
 
