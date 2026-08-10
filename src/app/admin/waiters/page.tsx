@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, Plus, Edit2, Key, ToggleLeft, ToggleRight, Trash2, Link2Off, 
-  Copy, Share2, Check, X, ShieldAlert, Smartphone, RefreshCw 
+  Copy, Share2, Check, X, ShieldAlert, Smartphone, RefreshCw, Eye, EyeOff 
 } from "lucide-react";
 
 interface Waiter {
@@ -19,6 +19,7 @@ interface Waiter {
   deviceId?: string;
   deviceName?: string;
   lastLogin?: string;
+  plainPassword?: string;
 }
 
 export default function WaitersAdmin() {
@@ -32,6 +33,24 @@ export default function WaitersAdmin() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [selectedWaiter, setSelectedWaiter] = useState<Waiter | null>(null);
+
+  // Password visibility state
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [showAllPasswords, setShowAllPasswords] = useState(false);
+
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleShowAllPasswords = () => {
+    const nextState = !showAllPasswords;
+    setShowAllPasswords(nextState);
+    const newVisible: Record<string, boolean> = {};
+    waiters.forEach((w) => {
+      newVisible[w._id] = nextState;
+    });
+    setVisiblePasswords(newVisible);
+  };
 
   // Form States
   const [name, setName] = useState("");
@@ -160,6 +179,12 @@ export default function WaitersAdmin() {
         username: data.username,
         plainPassword: data.plainPassword,
       });
+
+      setWaiters((prev) =>
+        prev.map((w) =>
+          w._id === selectedWaiter._id ? { ...w, plainPassword: data.plainPassword } : w
+        )
+      );
 
       setNewPassword("");
       setShowResetModal(false);
@@ -298,6 +323,19 @@ export default function WaitersAdmin() {
                 <tr className="bg-glass border-b border-border text-xs uppercase tracking-wider font-semibold text-muted-foreground">
                   <th className="p-4">Waiter</th>
                   <th className="p-4">Employee ID</th>
+                  <th className="p-4">
+                    <div className="flex items-center gap-1.5">
+                      <span>Password</span>
+                      <button
+                        type="button"
+                        onClick={toggleShowAllPasswords}
+                        className="p-0.5 hover:bg-glass rounded text-muted-foreground hover:text-gold transition-colors"
+                        title={showAllPasswords ? "Hide All Passwords" : "Show All Passwords"}
+                      >
+                        {showAllPasswords ? <EyeOff className="w-3.5 h-3.5 text-gold" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </th>
                   <th className="p-4">Mobile</th>
                   <th className="p-4">Branch</th>
                   <th className="p-4">Status</th>
@@ -313,6 +351,27 @@ export default function WaitersAdmin() {
                       <div className="text-xs text-muted-foreground">@{waiter.username}</div>
                     </td>
                     <td className="p-4 font-mono font-semibold text-gold">{waiter.employeeId}</td>
+                    <td className="p-4 font-mono">
+                      <div className="flex items-center gap-1.5">
+                        <span className="bg-input/60 border border-border/60 px-2.5 py-1 rounded-lg text-xs font-semibold text-foreground select-all">
+                          {visiblePasswords[waiter._id]
+                            ? waiter.plainPassword || "1234"
+                            : "••••••••"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => togglePasswordVisibility(waiter._id)}
+                          className="p-1 hover:bg-glass rounded text-muted-foreground hover:text-foreground transition-colors"
+                          title={visiblePasswords[waiter._id] ? "Hide Password" : "Show Password"}
+                        >
+                          {visiblePasswords[waiter._id] ? (
+                            <EyeOff className="w-3.5 h-3.5 text-gold" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
                     <td className="p-4">{waiter.mobile}</td>
                     <td className="p-4 capitalize">{waiter.branchId.replace("-", " ")}</td>
                     <td className="p-4">
