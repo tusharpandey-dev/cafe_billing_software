@@ -68,10 +68,6 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    plainPassword: {
-      type: String,
-      default: "",
-    },
   },
   {
     timestamps: true,

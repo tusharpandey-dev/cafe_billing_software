@@ -12,19 +12,6 @@ export async function GET() {
 
     await connectToDatabase();
     const waiters = await User.find({ role: "waiter" }).sort({ createdAt: -1 });
-
-    // Auto-backfill plainPassword for any existing waiters missing it
-    const defaultPassword = "1234";
-    const hashedDefaultPassword = await bcryptjs.hash(defaultPassword, 10);
-
-    for (const waiter of waiters) {
-      if (!waiter.plainPassword) {
-        waiter.plainPassword = defaultPassword;
-        waiter.password = hashedDefaultPassword;
-        await waiter.save();
-      }
-    }
-
     return NextResponse.json(waiters);
   } catch (error: any) {
     console.error("Fetch waiters API error:", error);
@@ -84,7 +71,6 @@ export async function POST(request: Request) {
       mobile: mobile.trim(),
       username: username.toLowerCase().trim(),
       password: hashedPassword,
-      plainPassword: password,
       role: "waiter",
       employeeId,
       branchId: branchId || "default-branch",
