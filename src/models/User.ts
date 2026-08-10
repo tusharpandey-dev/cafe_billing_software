@@ -30,6 +30,10 @@ const UserSchema = new Schema(
       type: String,
       required: true,
     },
+    plainPassword: {
+      type: String,
+      required: false,
+    },
     role: {
       type: String,
       enum: ["admin", "waiter", "kitchen"],

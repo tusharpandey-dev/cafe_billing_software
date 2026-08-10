@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, Plus, Edit2, Key, ToggleLeft, ToggleRight, Trash2, Link2Off, 
-  Copy, Share2, Check, X, ShieldAlert, Smartphone, RefreshCw 
+  Copy, Share2, Check, X, ShieldAlert, Smartphone, RefreshCw, Eye, EyeOff
 } from "lucide-react";
 
 interface Waiter {
@@ -19,6 +19,7 @@ interface Waiter {
   deviceId?: string;
   deviceName?: string;
   lastLogin?: string;
+  plainPassword?: string;
 }
 
 export default function WaitersAdmin() {
@@ -53,6 +54,12 @@ export default function WaitersAdmin() {
     username: string;
     plainPassword: string;
   } | null>(null);
+
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   useEffect(() => {
     fetchWaiters();
@@ -299,6 +306,7 @@ export default function WaitersAdmin() {
                   <th className="p-4">Waiter</th>
                   <th className="p-4">Employee ID</th>
                   <th className="p-4">Mobile</th>
+                  <th className="p-4">Password</th>
                   <th className="p-4">Branch</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Device</th>
@@ -314,6 +322,28 @@ export default function WaitersAdmin() {
                     </td>
                     <td className="p-4 font-mono font-semibold text-gold">{waiter.employeeId}</td>
                     <td className="p-4">{waiter.mobile}</td>
+                    <td className="p-4 font-mono">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">
+                          {visiblePasswords[waiter._id]
+                            ? waiter.plainPassword || "—"
+                            : "••••"}
+                        </span>
+                        {waiter.plainPassword && (
+                          <button
+                            onClick={() => togglePasswordVisibility(waiter._id)}
+                            className="p-1 hover:bg-glass rounded text-muted-foreground hover:text-foreground transition-colors inline-flex items-center"
+                            title={visiblePasswords[waiter._id] ? "Hide Password" : "Show Password"}
+                          >
+                            {visiblePasswords[waiter._id] ? (
+                              <EyeOff className="w-3.5 h-3.5" />
+                            ) : (
+                              <Eye className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4 capitalize">{waiter.branchId.replace("-", " ")}</td>
                     <td className="p-4">
                       <button

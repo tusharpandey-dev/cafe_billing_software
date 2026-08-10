@@ -71,6 +71,7 @@ export async function POST(request: Request) {
       mobile: mobile.trim(),
       username: username.toLowerCase().trim(),
       password: hashedPassword,
+      plainPassword: password.trim(),
       role: "waiter",
       employeeId,
       branchId: branchId || "default-branch",
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       waiter: {
-        id: newWaiter._id,
+        _id: newWaiter._id,
         name: newWaiter.name,
         username: newWaiter.username,
         mobile: newWaiter.mobile,
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
         branchId: newWaiter.branchId,
         restaurantId: newWaiter.restaurantId,
         mustChangePassword: newWaiter.mustChangePassword,
+        plainPassword: newWaiter.plainPassword,
       },
       plainPassword: password, // only returned on creation
     });

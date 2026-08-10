@@ -26,6 +26,7 @@ export async function POST(
       id,
       {
         password: hashedPassword,
+        plainPassword: password.trim(),
         mustChangePassword: true,
       },
       { new: true }
