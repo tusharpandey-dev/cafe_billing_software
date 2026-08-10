@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       branchId: branchId || "default-branch",
       restaurantId: restaurantId || "default-restaurant",
       status: status || "active",
-      mustChangePassword: true,
+      mustChangePassword: false,
     });
 
     // Return the response with the generated employeeId and the plain-text password for sharing

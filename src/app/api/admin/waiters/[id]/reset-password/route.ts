@@ -27,7 +27,7 @@ export async function POST(
       {
         password: hashedPassword,
         plainPassword: password.trim(),
-        mustChangePassword: true,
+        mustChangePassword: false,
       },
       { new: true }
     );

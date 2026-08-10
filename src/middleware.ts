@@ -54,12 +54,6 @@ export function middleware(request: NextRequest) {
       if (payload.role !== "waiter") {
         return NextResponse.redirect(new URL("/login", request.url));
       }
-      if (payload.mustChangePassword && pathname !== "/waiter/change-password") {
-        return NextResponse.redirect(new URL("/waiter/change-password", request.url));
-      }
-      if (!payload.mustChangePassword && pathname === "/waiter/change-password") {
-        return NextResponse.redirect(new URL("/waiter", request.url));
-      }
     }
 
     if (pathname.startsWith("/kitchen") && payload.role !== "kitchen" && payload.role !== "admin") {
