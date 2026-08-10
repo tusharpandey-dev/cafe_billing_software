@@ -18,21 +18,33 @@ export async function PUT(
 
     if (!name || !mobile || !username) {
       return NextResponse.json(
-        { error: "Name, mobile number, and username are required." },
+        { error: "Name, mobile number, and email are required." },
         { status: 400 }
       );
     }
 
-    const cleanedUsername = username.toLowerCase().trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const waiterEmail = username.toLowerCase().trim();
+
+    if (!emailRegex.test(waiterEmail)) {
+      return NextResponse.json(
+        { error: "A valid email address is required for waiter credentials." },
+        { status: 400 }
+      );
+    }
+
     const cleanedMobile = mobile.trim();
 
     // Uniqueness checks (excluding current waiter)
-    const existingUsername = await User.findOne({
-      username: cleanedUsername,
+    const existingUser = await User.findOne({
+      $or: [
+        { username: waiterEmail },
+        { email: waiterEmail }
+      ],
       _id: { $ne: id },
     });
-    if (existingUsername) {
-      return NextResponse.json({ error: "Username is already taken." }, { status: 400 });
+    if (existingUser) {
+      return NextResponse.json({ error: "Email/Username is already taken." }, { status: 400 });
     }
 
     const existingMobile = await User.findOne({
@@ -48,7 +60,8 @@ export async function PUT(
       {
         name: name.trim(),
         mobile: cleanedMobile,
-        username: cleanedUsername,
+        email: waiterEmail,
+        username: waiterEmail,
         branchId: branchId || "default-branch",
         restaurantId: restaurantId || "default-restaurant",
         status: status || "active",

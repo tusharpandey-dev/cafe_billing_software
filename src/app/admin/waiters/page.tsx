@@ -253,7 +253,7 @@ export default function WaitersAdmin() {
 
   const buildCredentialShareText = (card: typeof credentialCard) => {
     if (!card) return "";
-    return `*WAITER LOGIN DETAILS*\n\nRestaurant: Cafe Milano\nName: ${card.waiterName}\nEmployee ID: ${card.employeeId}\nUsername: ${card.username}\nPassword: ${card.plainPassword}\n\nLogin & Setup URL: ${getLoginUrl()}`;
+    return `*WAITER LOGIN DETAILS*\n\nRestaurant: Cafe Milano\nName: ${card.waiterName}\nEmployee ID: ${card.employeeId}\nEmail: ${card.username}\nPassword: ${card.plainPassword}\n\nLogin & Setup URL: ${getLoginUrl()}`;
   };
 
   const copyToClipboard = (card: typeof credentialCard) => {
@@ -318,7 +318,7 @@ export default function WaitersAdmin() {
                   <tr key={waiter._id} className="hover:bg-glass/30 transition-colors">
                     <td className="p-4">
                       <div className="font-semibold">{waiter.name}</div>
-                      <div className="text-xs text-muted-foreground">@{waiter.username}</div>
+                      <div className="text-xs text-muted-foreground">{waiter.username}</div>
                     </td>
                     <td className="p-4 font-mono font-semibold text-gold">{waiter.employeeId}</td>
                     <td className="p-4">{waiter.mobile}</td>
@@ -451,7 +451,7 @@ export default function WaitersAdmin() {
                     <span className="font-bold text-gold">{credentialCard.employeeId}</span>
                   </div>
                   <div className="border-t border-border/40 my-2 pt-2">
-                    <span className="text-muted-foreground">Username:</span>{" "}
+                    <span className="text-muted-foreground">Email:</span>{" "}
                     <span className="font-bold text-foreground">{credentialCard.username}</span>
                   </div>
                   <div>
@@ -544,11 +544,11 @@ export default function WaitersAdmin() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Username</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Email Address</label>
                   <input
-                    type="text"
+                    type="email"
                     required
-                    placeholder="e.g. waiter_rahul"
+                    placeholder="e.g. rahul@cafemilano.com"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full bg-input border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold transition-colors"
@@ -683,11 +683,11 @@ export default function WaitersAdmin() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Username</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Email Address</label>
                   <input
-                    type="text"
+                    type="email"
                     required
-                    placeholder="e.g. waiter_rahul"
+                    placeholder="e.g. rahul@cafemilano.com"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full bg-input border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-gold transition-colors"

@@ -26,19 +26,35 @@ export async function POST(request: Request) {
     }
 
     await connectToDatabase();
-    const { name, mobile, username, password, branchId, restaurantId, status } = await request.json();
+    const body = await request.json();
+    const { name, mobile, username, password, branchId, restaurantId, status } = body;
 
     if (!name || !mobile || !username || !password) {
       return NextResponse.json(
-        { error: "Name, mobile number, username, and password are required." },
+        { error: "Name, mobile number, email, and password are required." },
+        { status: 400 }
+      );
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const waiterEmail = username.toLowerCase().trim();
+
+    if (!emailRegex.test(waiterEmail)) {
+      return NextResponse.json(
+        { error: "A valid email address is required for waiter credentials." },
         { status: 400 }
       );
     }
 
     // Uniqueness checks
-    const existingUsername = await User.findOne({ username: username.toLowerCase().trim() });
-    if (existingUsername) {
-      return NextResponse.json({ error: "Username is already taken." }, { status: 400 });
+    const existingUser = await User.findOne({
+      $or: [
+        { username: waiterEmail },
+        { email: waiterEmail }
+      ]
+    });
+    if (existingUser) {
+      return NextResponse.json({ error: "Email/Username is already taken." }, { status: 400 });
     }
 
     const existingMobile = await User.findOne({ mobile: mobile.trim() });
@@ -69,7 +85,8 @@ export async function POST(request: Request) {
     const newWaiter = await User.create({
       name: name.trim(),
       mobile: mobile.trim(),
-      username: username.toLowerCase().trim(),
+      email: waiterEmail,
+      username: waiterEmail,
       password: hashedPassword,
       plainPassword: password.trim(),
       role: "waiter",
