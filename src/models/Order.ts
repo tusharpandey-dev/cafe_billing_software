@@ -9,6 +9,7 @@ const OrderItemSchema = new Schema({
   description: { type: String, default: "" },
   emoji: { type: String, default: "🍽️" },
   quantity: { type: Number, required: true },
+  portion: { type: String, enum: ["half", "full"], default: "full" },
 });
 
 const OrderSchema = new Schema(

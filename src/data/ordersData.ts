@@ -2,7 +2,7 @@ import type { MenuItem } from "./menuData";
 
 export type OrderStatus = "pending" | "preparing" | "completed";
 
-export type OrderItem = MenuItem & { quantity: number };
+export type OrderItem = MenuItem & { quantity: number; portion?: "half" | "full" };
 
 export type Order = {
   id: string;

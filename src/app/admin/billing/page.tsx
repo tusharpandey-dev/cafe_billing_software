@@ -184,7 +184,7 @@ export default function AdminBilling() {
       "Table No": `T${o.tableNumber}`,
       "Customer Name": o.customerName || "Guest",
       "Items Count": o.items.length,
-      "Items Ordered": o.items.map((i) => `${i.quantity}x ${i.name}`).join(", "),
+      "Items Ordered": o.items.map((i) => `${i.quantity}x ${i.name}${i.portion === "half" ? " (Half)" : ""}`).join(", "),
       "Status": o.status.charAt(0).toUpperCase() + o.status.slice(1),
       "Total Amount (₹)": parseFloat(o.total.toFixed(2)),
     }));
@@ -243,7 +243,7 @@ export default function AdminBilling() {
       "Table No": `T${o.tableNumber}`,
       "Customer Name": o.customerName || "Guest",
       "Items Count": o.items.length,
-      "Items Ordered": o.items.map((i) => `${i.quantity}x ${i.name}`).join(", "),
+      "Items Ordered": o.items.map((i) => `${i.quantity}x ${i.name}${i.portion === "half" ? " (Half)" : ""}`).join(", "),
       "Status": o.status.charAt(0).toUpperCase() + o.status.slice(1),
       "Total Amount (₹)": parseFloat(o.total.toFixed(2)),
     }));

@@ -19,7 +19,7 @@ export function ReceiptCard({ order }: { order: Order }) {
     : order.items;
 
   itemsToConsolidate.forEach((item) => {
-    const existing = consolidatedItems.find((i) => i.id === item.id);
+    const existing = consolidatedItems.find((i) => i.id === item.id && i.portion === item.portion);
     if (existing) {
       existing.quantity += item.quantity;
     } else {
@@ -76,8 +76,8 @@ export function ReceiptCard({ order }: { order: Order }) {
           <span className="w-16 text-right">Total</span>
         </div>
         {consolidatedItems.map((it, idx) => (
-          <div key={it.id || `${it.name}-${idx}`} className="flex text-xs py-1">
-            <span className="flex-1 truncate pr-2">{it.name}</span>
+          <div key={`${it.id}-${it.portion || "full"}`} className="flex text-xs py-1">
+            <span className="flex-1 truncate pr-2">{it.name} {it.portion === "half" ? "(Half)" : ""}</span>
             <span className="w-8 text-center">{it.quantity}</span>
             <span className="w-16 text-right">₹{(it.price * it.quantity).toFixed(2)}</span>
           </div>

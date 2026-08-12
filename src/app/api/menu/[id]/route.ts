@@ -18,6 +18,7 @@ export async function PATCH(
         $set: {
           ...(body.name !== undefined && { name: body.name.trim() }),
           ...(body.price !== undefined && { price: Number(body.price) }),
+          ...(body.halfPrice !== undefined && { halfPrice: body.halfPrice !== null && body.halfPrice !== "" ? Number(body.halfPrice) : null }),
           ...(body.category !== undefined && { category: body.category.trim() }),
           ...(body.veg !== undefined && { veg: Boolean(body.veg) }),
           ...(body.description !== undefined && { description: body.description.trim() }),

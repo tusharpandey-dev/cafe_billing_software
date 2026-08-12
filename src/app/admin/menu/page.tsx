@@ -8,6 +8,7 @@ import { useStore, type MenuItem } from "@/lib/store";
 type Draft = {
   name: string;
   price: string;
+  halfPrice: string;
   category: string;
   emoji: string;
   description: string;
@@ -17,6 +18,7 @@ type Draft = {
 const emptyDraft = (cat: string): Draft => ({
   name: "",
   price: "",
+  halfPrice: "",
   category: cat,
   emoji: "🍽️",
   description: "",
@@ -44,6 +46,7 @@ export default function AdminMenu() {
     setDraft({
       name: m.name,
       price: String(m.price),
+      halfPrice: m.halfPrice !== undefined && m.halfPrice !== null ? String(m.halfPrice) : "",
       category: m.category,
       emoji: m.emoji,
       description: m.description,
@@ -57,6 +60,7 @@ export default function AdminMenu() {
     const payload = {
       name: draft.name.trim(),
       price,
+      halfPrice: draft.halfPrice ? Number(draft.halfPrice) : null,
       category: draft.category,
       emoji: draft.emoji || "🍽️",
       description: draft.description.trim(),
@@ -156,7 +160,12 @@ export default function AdminMenu() {
               <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{m.description}</p>
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40">
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{m.category}</span>
-                <span className="font-display font-bold gold-text">₹{m.price}</span>
+                <div className="flex flex-col items-end">
+                  <span className="font-display font-bold gold-text text-sm">₹{m.price} <span className="text-[9px] text-muted-foreground font-sans uppercase">Full</span></span>
+                  {m.halfPrice && (
+                    <span className="font-display font-semibold text-muted-foreground text-xs">₹{m.halfPrice} <span className="text-[9px] uppercase">Half</span></span>
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}
@@ -176,7 +185,7 @@ export default function AdminMenu() {
                   placeholder="Margherita Pizza"
                 />
               </Field>
-              <Field label="Price (₹)">
+              <Field label="Price (₹) (Full)">
                 <input
                   type="number"
                   value={draft.price}
@@ -185,7 +194,16 @@ export default function AdminMenu() {
                   placeholder="199"
                 />
               </Field>
-              <Field label="Emoji">
+              <Field label="Price (₹) (Half - Optional)">
+                <input
+                  type="number"
+                  value={draft.halfPrice}
+                  onChange={(e) => setDraft({ ...draft, halfPrice: e.target.value })}
+                  className="field"
+                  placeholder="e.g. 109"
+                />
+              </Field>
+              <Field label="Emoji" className="col-span-2">
                 <input
                   value={draft.emoji}
                   onChange={(e) => setDraft({ ...draft, emoji: e.target.value })}

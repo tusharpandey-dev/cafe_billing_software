@@ -168,8 +168,8 @@ export default function KitchenScreen() {
   const activeOrdersCount = pendingOrders.length + preparingOrders.length;
   const completedTodayCount = orders.filter((o) => o.status === "completed").length;
 
-  const toggleCheckItem = (orderId: string, itemId: string) => {
-    const key = `${orderId}_${itemId}`;
+  const toggleCheckItem = (orderId: string, itemId: string, portion: string = "full") => {
+    const key = `${orderId}_${itemId}_${portion}`;
     setCheckedItems((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
@@ -521,7 +521,7 @@ export default function KitchenScreen() {
               {kotOrder.items.map((it, idx) => (
                 <div key={idx} className="flex items-start justify-between">
                   <div>
-                    <span className="font-bold text-base">{it.quantity} × {it.name}</span>
+                    <span className="font-bold text-base">{it.quantity} × {it.name} {it.portion === "half" ? "(Half)" : ""}</span>
                     <span className="text-[10px] block text-gray-500">{it.category} {it.veg ? "(Veg)" : "(Non-Veg)"}</span>
                   </div>
                   <span className="text-lg font-black">{it.quantity}</span>
@@ -568,7 +568,7 @@ function KitchenOrderCard({
   order: Order;
   filterStation: string;
   checkedItems: Record<string, boolean>;
-  onToggleCheck: (orderId: string, itemId: string) => void;
+  onToggleCheck: (orderId: string, itemId: string, portion?: string) => void;
   onUpdateStatus: (id: string, status: OrderStatus) => Promise<void>;
   onDeleteOrder: (id: string) => Promise<void>;
   onOpenKot: () => void;
@@ -631,11 +631,11 @@ function KitchenOrderCard({
       {/* Items Checklist */}
       <div className="mt-2 space-y-1.5">
         {visibleItems.map((it, idx) => {
-          const isChecked = !!checkedItems[`${order.id}_${it.id}`];
+          const isChecked = !!checkedItems[`${order.id}_${it.id}_${it.portion || "full"}`];
           return (
             <div
-              key={it.id || `${it.name}-${idx}`}
-              onClick={() => onToggleCheck(order.id, it.id)}
+              key={it.id ? `${it.id}-${it.portion || "full"}` : `${it.name}-${idx}-${it.portion || "full"}`}
+              onClick={() => onToggleCheck(order.id, it.id, it.portion)}
               className={`flex items-center justify-between p-1.5 rounded-lg cursor-pointer transition-all border ${
                 isChecked
                   ? "bg-muted/40 border-border/30 line-through text-muted-foreground"
@@ -653,7 +653,7 @@ function KitchenOrderCard({
                 <span className="text-base">{it.emoji}</span>
                 <div className="min-w-0">
                   <p className={`text-xs font-bold truncate ${isChecked ? "text-muted-foreground" : ""}`}>
-                    {it.name}
+                    {it.name} {it.portion === "half" ? "(Half)" : ""}
                   </p>
                   <span className="text-[9px] text-muted-foreground flex items-center gap-1">
                     {it.veg ? <Leaf className="w-2.5 h-2.5 text-success" /> : <Drumstick className="w-2.5 h-2.5 text-destructive" />}

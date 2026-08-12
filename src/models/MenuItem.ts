@@ -11,6 +11,10 @@ const MenuItemSchema = new Schema(
       type: Number,
       required: true,
     },
+    halfPrice: {
+      type: Number,
+      default: null,
+    },
     category: {
       type: String,
       required: true,

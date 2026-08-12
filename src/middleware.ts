@@ -21,12 +21,18 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
+  const isTokenExpired = (payload: any) => {
+    if (!payload) return true;
+    if (payload.exp && Date.now() >= payload.exp * 1000) return true;
+    return false;
+  };
+
   // 1. If trying to access protected paths
   if (pathname.startsWith("/admin") || pathname.startsWith("/waiter") || pathname.startsWith("/kitchen")) {
     if (pathname === "/waiter/setup") {
       if (token) {
         const payload = parseJwt(token);
-        if (payload && payload.role === "waiter") {
+        if (payload && !isTokenExpired(payload) && payload.role === "waiter") {
           return NextResponse.redirect(new URL("/waiter", request.url));
         }
       }
@@ -38,8 +44,8 @@ export function middleware(request: NextRequest) {
     }
 
     const payload = parseJwt(token);
-    if (!payload) {
-      // Clear invalid token cookie and redirect
+    if (!payload || isTokenExpired(payload)) {
+      // Clear invalid/expired token cookie and redirect
       const response = NextResponse.redirect(new URL("/login", request.url));
       response.cookies.delete("token");
       return response;
@@ -64,7 +70,7 @@ export function middleware(request: NextRequest) {
   // 2. If trying to access login page while already authenticated
   if (pathname.startsWith("/login") && token) {
     const payload = parseJwt(token);
-    if (payload) {
+    if (payload && !isTokenExpired(payload)) {
       if (payload.role === "admin") {
         return NextResponse.redirect(new URL("/admin", request.url));
       } else if (payload.role === "waiter") {

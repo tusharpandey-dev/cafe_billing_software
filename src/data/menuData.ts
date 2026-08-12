@@ -2,6 +2,7 @@ export type MenuItem = {
   id: string;
   name: string;
   price: number;
+  halfPrice?: number | null;
   category: string;
   veg: boolean;
   description: string;

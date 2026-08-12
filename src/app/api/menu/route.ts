@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   try {
     await connectToDatabase();
     
-    const { name, price, category, veg, description, emoji } = await request.json();
+    const { name, price, halfPrice, category, veg, description, emoji } = await request.json();
     
     if (!name || price === undefined || !category) {
       return NextResponse.json(
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
     const newItem = await MenuItemModel.create({
       name: name.trim(),
       price: Number(price),
+      halfPrice: halfPrice !== undefined && halfPrice !== null && halfPrice !== "" ? Number(halfPrice) : null,
       category: category.trim(),
       veg: Boolean(veg),
       description: (description || "").trim(),

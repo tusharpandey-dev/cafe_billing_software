@@ -77,19 +77,21 @@ export default function WaiterPOS() {
     [activeCat, search, menuItems]
   );
 
-  const add = (m: MenuItem) => {
+  const add = (m: MenuItem, portion: "half" | "full" = "full") => {
     setItems((prev) => {
-      const ex = prev.find((i) => i.id === m.id);
+      const ex = prev.find((i) => i.id === m.id && i.portion === portion);
+      const itemPrice = portion === "half" && m.halfPrice ? m.halfPrice : m.price;
       return ex
-        ? prev.map((i) => (i.id === m.id ? { ...i, quantity: i.quantity + 1 } : i))
-        : [...prev, { ...m, quantity: 1 }];
+        ? prev.map((i) => (i.id === m.id && i.portion === portion ? { ...i, quantity: i.quantity + 1 } : i))
+        : [...prev, { ...m, price: itemPrice, portion, quantity: 1 }];
     });
   };
-  const dec = (id: string) =>
+  const dec = (id: string, portion: "half" | "full" = "full") =>
     setItems((prev) =>
-      prev.flatMap((i) => (i.id === id ? (i.quantity > 1 ? [{ ...i, quantity: i.quantity - 1 }] : []) : [i]))
+      prev.flatMap((i) => (i.id === id && i.portion === portion ? (i.quantity > 1 ? [{ ...i, quantity: i.quantity - 1 }] : []) : [i]))
     );
-  const remove = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
+  const remove = (id: string, portion: "half" | "full" = "full") =>
+    setItems((prev) => prev.filter((i) => !(i.id === id && i.portion === portion)));
 
   const totals = calcTotals(items);
 
@@ -97,7 +99,26 @@ export default function WaiterPOS() {
     if (!items.length) return;
 
     try {
-      if (editingOrderId) {
+      if (activeOrderForTable && !editingOrderId) {
+        // Enforce merging into the existing unpaid order for that table
+        const mergedItems = [...activeOrderForTable.items];
+        items.forEach((newItem) => {
+          const existing = mergedItems.find(
+            (it) => it.id === newItem.id && it.portion === newItem.portion
+          );
+          if (existing) {
+            existing.quantity += newItem.quantity;
+          } else {
+            mergedItems.push(newItem);
+          }
+        });
+        const updated = await updateOrderItems(activeOrderForTable.id, mergedItems, notes || activeOrderForTable.notes);
+        if (updated) {
+          setPlaced(updated);
+        } else {
+          alert("Could not append items to the active order.");
+        }
+      } else if (editingOrderId) {
         const updated = await updateOrderItems(editingOrderId, items, notes);
         if (updated) {
           setPlaced(updated);
@@ -209,15 +230,13 @@ export default function WaiterPOS() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-4">
           <AnimatePresence mode="popLayout">
             {filtered.map((m) => (
-              <motion.button
+              <motion.div
                 key={m.id}
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 whileHover={{ y: -3 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => add(m)}
                 className="glass rounded-2xl p-4 text-left hover:gold-border transition-all group"
               >
                 <div className="flex items-start justify-between">
@@ -230,13 +249,42 @@ export default function WaiterPOS() {
                 </div>
                 <p className="font-semibold mt-2 text-sm">{m.name}</p>
                 <p className="text-[11px] text-muted-foreground line-clamp-1">{m.description}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="font-display font-bold gold-text">₹{m.price}</span>
-                  <span className="w-7 h-7 rounded-full bg-gradient-gold text-gold-foreground flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Plus className="w-4 h-4" />
-                  </span>
-                </div>
-              </motion.button>
+                {m.halfPrice ? (
+                  <div className="flex flex-col gap-1.5 w-full mt-3 pt-3 border-t border-border/40 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground font-medium">Half: <strong className="gold-text">₹{m.halfPrice}</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => add(m, "half")}
+                        className="px-2.5 py-1 rounded-lg bg-secondary text-[11px] font-bold hover:bg-gradient-gold hover:text-gold-foreground transition-all flex items-center gap-1 shadow-sm"
+                      >
+                        <Plus className="w-3 h-3" /> Half
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground font-medium">Full: <strong className="gold-text">₹{m.price}</strong></span>
+                      <button
+                        type="button"
+                        onClick={() => add(m, "full")}
+                        className="px-2.5 py-1 rounded-lg bg-secondary text-[11px] font-bold hover:bg-gradient-gold hover:text-gold-foreground transition-all flex items-center gap-1 shadow-sm"
+                      >
+                        <Plus className="w-3 h-3" /> Full
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="font-display font-bold gold-text">₹{m.price}</span>
+                    <button
+                      type="button"
+                      onClick={() => add(m, "full")}
+                      className="w-7 h-7 rounded-full bg-gradient-gold text-gold-foreground flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </motion.div>
             ))}
           </AnimatePresence>
         </div>
@@ -280,9 +328,12 @@ export default function WaiterPOS() {
         </div>
 
         {activeOrderForTable && !editingOrderId && (
-          <div className="mt-3 p-3 rounded-xl bg-primary/10 border border-primary/20 flex flex-col gap-2 shadow-sm">
+          <div className="mt-3 p-3 rounded-xl bg-warning/10 border border-warning/30 flex flex-col gap-1.5 shadow-sm">
             <p className="text-xs text-foreground leading-relaxed">
               💡 Table <strong>{tableNumber}</strong> has an active unpaid order (ID: <strong>{activeOrderForTable.id}</strong>).
+            </p>
+            <p className="text-[10px] text-muted-foreground leading-normal">
+              New items added to the cart will be automatically appended to this existing order instead of placing a new one.
             </p>
             <button
               onClick={() => {
@@ -292,9 +343,9 @@ export default function WaiterPOS() {
                 setEditingOrderId(activeOrderForTable.id);
               }}
               type="button"
-              className="text-xs font-semibold px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-all text-center self-start shadow-sm"
+              className="text-xs font-semibold px-3 py-1.5 bg-warning/20 text-warning-foreground rounded-lg hover:bg-warning/30 transition-all text-center self-start mt-1 border border-warning/30"
             >
-              Load Order to Add Items
+              Modify / Edit Existing Items
             </button>
           </div>
         )}
@@ -378,7 +429,7 @@ export default function WaiterPOS() {
           <AnimatePresence>
             {items.map((it) => (
               <motion.div
-                key={it.id}
+                key={`${it.id}-${it.portion || "full"}`}
                 layout
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -387,18 +438,18 @@ export default function WaiterPOS() {
               >
                 <div className="text-xl">{it.emoji}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{it.name}</p>
+                  <p className="text-sm font-medium truncate">{it.name} {it.portion === "half" ? "(Half)" : ""}</p>
                   <p className="text-xs text-muted-foreground">₹{it.price} × {it.quantity}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => dec(it.id)} className="w-7 h-7 rounded-md bg-card flex items-center justify-center hover:bg-secondary">
+                  <button onClick={() => dec(it.id, it.portion)} className="w-7 h-7 rounded-md bg-card flex items-center justify-center hover:bg-secondary">
                     <Minus className="w-3 h-3" />
                   </button>
                   <span className="w-6 text-center text-sm font-semibold">{it.quantity}</span>
-                  <button onClick={() => add(it)} className="w-7 h-7 rounded-md bg-card flex items-center justify-center hover:bg-secondary">
+                  <button onClick={() => add(it, it.portion)} className="w-7 h-7 rounded-md bg-card flex items-center justify-center hover:bg-secondary">
                     <Plus className="w-3 h-3" />
                   </button>
-                  <button onClick={() => remove(it.id)} className="w-7 h-7 rounded-md text-destructive hover:bg-destructive/10 flex items-center justify-center">
+                  <button onClick={() => remove(it.id, it.portion)} className="w-7 h-7 rounded-md text-destructive hover:bg-destructive/10 flex items-center justify-center">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
