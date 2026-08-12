@@ -115,7 +115,7 @@ export default function KitchenScreen() {
       if (soundEnabled) {
         playKitchenChime();
       }
-      const newest = currentPending[0];
+      const newest = [...currentPending].sort((a, b) => b.createdAt - a.createdAt)[0];
       if (newest) {
         setNewOrderAlert(`🔔 NEW ORDER #${newest.id} for Table ${newest.tableNumber}!`);
         setTimeout(() => setNewOrderAlert(null), 6000);
@@ -153,15 +153,24 @@ export default function KitchenScreen() {
   };
 
   const pendingOrders = useMemo(
-    () => orders.filter((o) => o.status === "pending" && filterOrder(o)),
+    () =>
+      orders
+        .filter((o) => o.status === "pending" && filterOrder(o))
+        .sort((a, b) => a.createdAt - b.createdAt),
     [orders, filterStation, search]
   );
   const preparingOrders = useMemo(
-    () => orders.filter((o) => o.status === "preparing" && filterOrder(o)),
+    () =>
+      orders
+        .filter((o) => o.status === "preparing" && filterOrder(o))
+        .sort((a, b) => a.createdAt - b.createdAt),
     [orders, filterStation, search]
   );
   const completedOrders = useMemo(
-    () => orders.filter((o) => o.status === "completed" && filterOrder(o)),
+    () =>
+      orders
+        .filter((o) => o.status === "completed" && filterOrder(o))
+        .sort((a, b) => a.createdAt - b.createdAt),
     [orders, filterStation, search]
   );
 

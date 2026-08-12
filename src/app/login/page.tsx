@@ -99,7 +99,7 @@ export default function Login() {
             <input
               type="text"
               required
-              placeholder="Email, Username or Waiter ID"
+              placeholder={role === "waiter" ? "Waiter Email Address" : "Email or Username"}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-input/50 border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors"
@@ -147,3 +147,4 @@ export default function Login() {
     </div>
   );
 }
+              
