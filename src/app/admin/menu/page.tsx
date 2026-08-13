@@ -34,7 +34,17 @@ export default function AdminMenu() {
   const [newCat, setNewCat] = useState("");
   const [draft, setDraft] = useState<Draft>(emptyDraft(categories[0] ?? ""));
 
-  const list = activeCat === "All" ? menu : menu.filter((m) => m.category === activeCat);
+  const [quickPrices, setQuickPrices] = useState<Record<string, string>>({});
+
+  const saveQuickPrice = async (id: string) => {
+    const val = quickPrices[id];
+    if (!val || isNaN(Number(val)) || Number(val) <= 0) return;
+    await updateMenuItem(id, { price: Number(val) });
+  };
+
+  const list = activeCat === "All"
+    ? menu.filter((m) => m.category !== "Quick Add")
+    : menu.filter((m) => m.category === activeCat && m.category !== "Quick Add");
 
   const openAdd = () => {
     setEditing(null);
@@ -117,6 +127,44 @@ export default function AdminMenu() {
             {c}
           </button>
         ))}
+      </div>
+
+      {/* Quick Add Items Pricing Panel */}
+      <div className="glass rounded-2xl p-5 mb-6 hover:gold-border transition-all">
+        <h2 className="text-sm font-semibold mb-4 uppercase tracking-wider text-muted-foreground">Quick Add Items (Admin Pricing)</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {menu.filter((m) => m.category === "Quick Add").map((m) => (
+            <div key={m.id} className="flex items-center justify-between gap-4 p-3 bg-secondary/20 rounded-xl border border-border/40">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{m.emoji}</span>
+                <div>
+                  <p className="text-sm font-semibold">{m.name}</p>
+                  <p className="text-xs text-muted-foreground">Current Price: ₹{m.price}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">₹</span>
+                  <input
+                    type="number"
+                    value={quickPrices[m.id] !== undefined ? quickPrices[m.id] : String(m.price)}
+                    onChange={(e) => setQuickPrices((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                    className="w-20 bg-input/50 border border-border rounded-lg pl-6 pr-2 py-1.5 text-sm focus:outline-none focus:border-primary"
+                    placeholder={String(m.price)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => saveQuickPrice(m.id)}
+                  disabled={quickPrices[m.id] === undefined || quickPrices[m.id] === String(m.price) || !quickPrices[m.id]}
+                  className="px-3 py-1.5 rounded-lg bg-gradient-gold text-gold-foreground text-xs font-semibold shadow-gold disabled:opacity-40 disabled:shadow-none transition-all"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

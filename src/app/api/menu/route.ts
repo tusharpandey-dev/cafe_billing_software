@@ -14,6 +14,33 @@ export async function GET() {
       await MenuItemModel.insertMany(cleanSeedMenu);
       dbMenu = await MenuItemModel.find().sort({ createdAt: -1 });
     }
+
+    // Ensure Water Bottle and Cold Drinks exist
+    const hasWaterBottle = dbMenu.some((m: any) => m.name === "Water Bottle");
+    if (!hasWaterBottle) {
+      const newWaterBottle = await MenuItemModel.create({
+        name: "Water Bottle",
+        price: 20,
+        category: "Quick Add",
+        veg: true,
+        description: "Mineral Water Bottle",
+        emoji: "🚰",
+      });
+      dbMenu.push(newWaterBottle);
+    }
+
+    const hasColdDrinks = dbMenu.some((m: any) => m.name === "Cold Drinks");
+    if (!hasColdDrinks) {
+      const newColdDrinks = await MenuItemModel.create({
+        name: "Cold Drinks",
+        price: 40,
+        category: "Quick Add",
+        veg: true,
+        description: "Carbonated Cold Drink",
+        emoji: "🥤",
+      });
+      dbMenu.push(newColdDrinks);
+    }
     
     return NextResponse.json(dbMenu);
   } catch (error: any) {

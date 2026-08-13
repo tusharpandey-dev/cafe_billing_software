@@ -72,10 +72,17 @@ export default function WaiterPOS() {
   const filtered = useMemo(
     () =>
       menuItems.filter((m) =>
-        search ? m.name.toLowerCase().includes(search.toLowerCase()) : m.category === activeCat
+        m.category === "Quick Add"
+          ? false
+          : search
+          ? m.name.toLowerCase().includes(search.toLowerCase())
+          : m.category === activeCat
       ),
     [activeCat, search, menuItems]
   );
+
+  const waterBottleItem = useMemo(() => menuItems.find((m) => m.name === "Water Bottle"), [menuItems]);
+  const coldDrinksItem = useMemo(() => menuItems.find((m) => m.name === "Cold Drinks"), [menuItems]);
 
   const add = (m: MenuItem, portion: "half" | "full" = "full") => {
     setItems((prev) => {
@@ -421,6 +428,38 @@ export default function WaiterPOS() {
             </div>
           </motion.form>
         )}
+        {/* Quick Add Items */}
+        <div className="mt-4 pt-3 border-t border-border/40">
+          <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Quick Add Items</label>
+          <div className="flex gap-2 mt-1.5">
+            {waterBottleItem && (
+              <button
+                type="button"
+                onClick={() => add(waterBottleItem, "full")}
+                className="flex-1 glass py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-between hover:gold-border transition-all"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span>🚰</span>
+                  <span>Water Bottle</span>
+                </div>
+                <span className="gold-text font-bold">₹{waterBottleItem.price}</span>
+              </button>
+            )}
+            {coldDrinksItem && (
+              <button
+                type="button"
+                onClick={() => add(coldDrinksItem, "full")}
+                className="flex-1 glass py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-between hover:gold-border transition-all"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span>🥤</span>
+                  <span>Cold Drinks</span>
+                </div>
+                <span className="gold-text font-bold">₹{coldDrinksItem.price}</span>
+              </button>
+            )}
+          </div>
+        </div>
 
         <div className="mt-4 max-h-[40vh] overflow-y-auto pr-1 space-y-2">
           {items.length === 0 && (
